@@ -1,23 +1,23 @@
 import React from 'react';
 import { SafeAreaView, View, StyleSheet } from 'react-native';
-import { theme } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ScreenContainer({ children, style }) {
+  const { theme } = useTheme();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={[styles.container, style]}>{children}</View>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}> 
+      <View style={[styles.container, { backgroundColor: theme.colors.background }, style]}>{children}</View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.background
+    flex: 1
   },
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: theme.colors.background
+    padding: 20
   }
 });

@@ -1,12 +1,12 @@
 import React from 'react';
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 import { useCitizenActivities } from '../services/citizenHooks';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
-import { theme } from '../theme';
 
-function ActivityCard({ item }) {
+function ActivityCard({ item, styles }) {
   const activityDate = item.timestamp ? new Date(item.timestamp) : null;
   const imageSource =
     item.imageGatewayUrl?.[0] ||
@@ -71,6 +71,8 @@ function ActivityCard({ item }) {
 
 export default function MyActivityScreen() {
   const isFocused = useIsFocused();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const { activities, loading } = useCitizenActivities(isFocused ? 1 : 0);
 
   return (
@@ -90,7 +92,7 @@ export default function MyActivityScreen() {
         <FlatList
           data={activities}
           keyExtractor={(item) => item.id?.toString() || item._id || String(item.activityId) || String(Math.random())}
-          renderItem={({ item }) => <ActivityCard item={item} />}
+          renderItem={({ item }) => <ActivityCard item={item} styles={styles} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
@@ -99,7 +101,7 @@ export default function MyActivityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingTop: 44,

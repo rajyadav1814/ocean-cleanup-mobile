@@ -1,14 +1,14 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View, Text } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { useCitizenStats, useCitizenLeaderboard, useCitizenFeed } from '../services/citizenHooks';
-import { theme } from '../theme';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
 import BrandButton from '../components/BrandButton';
 
-function BadgeTile({ badge }) {
+function BadgeTile({ badge, styles }) {
   const earned = badge.earned;
   return (
     <View style={[styles.badge, earned ? styles.badgeEarned : styles.badgeLocked]}>
@@ -21,7 +21,7 @@ function BadgeTile({ badge }) {
   );
 }
 
-function LeaderboardRow({ row }) {
+function LeaderboardRow({ row, styles }) {
   return (
     <View style={[styles.leaderRow, row.isMe && styles.myLeaderRow]}>
       <Text style={styles.leaderPosition}>{row.rank <= 3 ? ['🥇', '🥈', '🥉'][row.rank - 1] || row.rank : row.rank}</Text>
@@ -37,6 +37,8 @@ export default function DashboardScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const { stats, loading: statsLoading } = useCitizenStats(isFocused ? 1 : 0);
   const { leaderboard, myRow, loading: leaderboardLoading } = useCitizenLeaderboard(isFocused ? 1 : 0);
   const { feed, loading: feedLoading } = useCitizenFeed(5, isFocused ? 1 : 0);
@@ -107,13 +109,13 @@ export default function DashboardScreen() {
           <GlassCard style={styles.badgesCard}>
             <Text style={styles.sectionTitle}>Your badges</Text>
             <Text style={styles.sectionSubtitle}>Earn by submitting reports and hitting milestones.</Text>
-            <View style={styles.badgeGrid}>{badges.map((badge) => <BadgeTile key={badge.id} badge={badge} />)}</View>
+            <View style={styles.badgeGrid}>{badges.map((badge) => <BadgeTile key={badge.id} badge={badge} styles={styles} />)}</View>
           </GlassCard>
 
           <GlassCard style={styles.leaderboardCard}>
             <Text style={styles.sectionTitle}>This week's leaders</Text>
             <Text style={styles.sectionSubtitle}>All citizens ranked by reports</Text>
-            {rows.concat(showMyRow ? [myRow] : []).map((row, index) => <LeaderboardRow key={row.userId || index} row={row} />)}
+            {rows.concat(showMyRow ? [myRow] : []).map((row, index) => <LeaderboardRow key={row.userId || index} row={row} styles={styles} />)}
           </GlassCard>
         </View>
 
@@ -139,7 +141,7 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   heroCard: {
     paddingBottom: 22,
     marginBottom: 16,

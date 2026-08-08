@@ -1,12 +1,14 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
-import { theme } from '../theme';
 
 export default function HomeScreen() {
   const { user, logout } = useAuth();
+  const { theme, mode, setMode } = useTheme();
+  const styles = getStyles(theme);
 
   return (
     <ScreenContainer>
@@ -22,6 +24,21 @@ export default function HomeScreen() {
         <Text style={styles.meta}>Email: {user?.email || 'Not available'}</Text>
       </GlassCard>
 
+      <View style={styles.toggleRow}>
+        <TouchableOpacity
+          style={[styles.toggleButton, mode === 'light' && styles.toggleButtonActive]}
+          onPress={() => setMode('light')}
+        >
+          <Text style={[styles.toggleText, mode === 'light' && styles.toggleTextActive]}>Light</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.toggleButton, mode === 'dark' && styles.toggleButtonActive]}
+          onPress={() => setMode('dark')}
+        >
+          <Text style={[styles.toggleText, mode === 'dark' && styles.toggleTextActive]}>Dark</Text>
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity style={styles.actionButton} onPress={logout}>
         <Text style={styles.actionText}>Sign out</Text>
       </TouchableOpacity>
@@ -29,12 +46,13 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   title: {
     color: theme.colors.textMain,
     fontSize: 26,
     fontWeight: '700',
-    marginBottom: 16
+    marginBottom: 16,
+    paddingTop: 40
   },
   profileRow: {
     flexDirection: 'row',
@@ -81,5 +99,30 @@ const styles = StyleSheet.create({
   actionText: {
     color: '#fff',
     fontWeight: '700'
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 14,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center'
+  },
+  toggleButtonActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary
+  },
+  toggleText: {
+    color: theme.colors.textMuted,
+    fontWeight: '700'
+  },
+  toggleTextActive: {
+    color: theme.colors.textMain
   }
 });

@@ -1,8 +1,37 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import { theme } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+
+const getStyles = (theme) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  brandContainer: {
+    padding: 24,
+    borderRadius: 24,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    shadowColor: theme.colors.primary,
+    shadowOpacity: 0.32,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 12
+  },
+  brandText: {
+    color: theme.colors.primary,
+    fontSize: 46,
+    letterSpacing: 1.3,
+    fontWeight: '800'
+  }
+});
 
 export default function SplashScreen() {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const scale = useRef(new Animated.Value(0.6)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -66,30 +95,3 @@ export default function SplashScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  brandContainer: {
-    padding: 24,
-    borderRadius: 24,
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
-    shadowOpacity: 0.32,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 12
-  },
-  brandText: {
-    color: theme.colors.primary,
-    fontSize: 46,
-    letterSpacing: 1.3,
-    fontWeight: '800'
-  }
-});

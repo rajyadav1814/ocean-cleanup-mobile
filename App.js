@@ -5,6 +5,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useFonts, Outfit_400Regular, Outfit_500Medium, Outfit_700Bold } from '@expo-google-fonts/outfit';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { themes } from './src/theme';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -13,12 +15,13 @@ import SubmitActivityScreen from './src/screens/SubmitActivityScreen';
 import MyActivityScreen from './src/screens/MyActivityScreen';
 import LoadingScreen from './src/screens/LoadingScreen';
 import SplashScreen from './src/screens/SplashScreen';
-import { theme } from './src/theme';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function AuthTabs() {
+  const { theme } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -53,6 +56,7 @@ function AuthTabs() {
 
 function RootNavigator() {
   const { loading, user } = useAuth();
+  const { theme, mode } = useTheme();
   const [fontsLoaded] = useFonts({ Outfit_400Regular, Outfit_500Medium, Outfit_700Bold });
   const [showSplash, setShowSplash] = React.useState(true);
 
@@ -66,7 +70,17 @@ function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={{
+      dark: mode === 'dark',
+      colors: {
+        primary: theme.colors.primary,
+        background: theme.colors.background,
+        card: theme.colors.surface,
+        text: theme.colors.textMain,
+        border: theme.colors.border,
+        notification: theme.colors.primary
+      }
+    }}>
       {user ? (
         <AuthTabs />
       ) : (
@@ -81,8 +95,10 @@ function RootNavigator() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

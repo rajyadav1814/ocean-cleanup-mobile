@@ -1,9 +1,10 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import ScreenContainer from '../components/ScreenContainer';
-import { theme } from '../theme';
 
 export default function LoadingScreen() {
+  const { theme } = useTheme();
   return (
     <ScreenContainer>
       <ActivityIndicator size="large" color={theme.colors.primary} style={styles.spinner} />

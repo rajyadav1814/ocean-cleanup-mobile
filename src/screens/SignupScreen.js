@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 import { authSignup } from '../services/api';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
 import BrandButton from '../components/BrandButton';
-import { theme } from '../theme';
 
 export default function SignupScreen() {
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -110,7 +112,7 @@ export default function SignupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   title: {
     color: theme.colors.textMain,
     fontSize: 26,

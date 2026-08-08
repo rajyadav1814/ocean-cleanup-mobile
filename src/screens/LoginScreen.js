@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { authLogin } from '../services/api';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
 import BrandButton from '../components/BrandButton';
-import { theme } from '../theme';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -72,7 +74,7 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   centerContainer: {
     flex: 1,
     justifyContent: 'center'

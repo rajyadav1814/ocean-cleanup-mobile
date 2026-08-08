@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, TouchableOpacity, Keyboard, View, Modal, Image } from 'react-native';
+import { Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { citizenApi } from '../services/api';
+import { useCitizenOrganizations } from '../services/citizenHooks';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
 import BrandButton from '../components/BrandButton';
-import { useCitizenOrganizations } from '../services/citizenHooks';
 
 export default function SubmitActivityScreen() {
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [form, setForm] = useState({ location: '', latitude: '', longitude: '', volunteers: '', waste: '', notes: '', organization: '', category: 'Plastic' });
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -284,7 +287,7 @@ export default function SubmitActivityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   screen: {
     paddingHorizontal: 16,
     paddingTop: 40,
