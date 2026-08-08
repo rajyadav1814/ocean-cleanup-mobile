@@ -12,7 +12,7 @@ export default function HomeScreen() {
 
   return (
     <ScreenContainer>
-      <GlassCard>
+      <GlassCard style={styles.profileCard}>
         <Text style={styles.title}>Profile</Text>
         <View style={styles.profileRow}>
           <View style={styles.avatar}><Text style={styles.avatarText}>{user?.displayInitial || 'U'}</Text></View>
@@ -51,8 +51,7 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.colors.textMain,
     fontSize: 26,
     fontWeight: '700',
-    marginBottom: 16,
-    paddingTop: 40
+    marginBottom: 16
   },
   profileRow: {
     flexDirection: 'row',
@@ -124,5 +123,8 @@ const getStyles = (theme) => StyleSheet.create({
   },
   toggleTextActive: {
     color: theme.colors.textMain
+  },
+  profileCard: {
+    paddingTop: 40
   }
 });
