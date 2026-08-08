@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Ocean Cleanup Mobile",
+    "slug": "ocean-cleanup-mobile",
+    "version": "1.0.0",
+    "sdkVersion": "54.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "extra": {
+      "API_BASE_URL": "https://ocean-cleanup-cardano.vercel.app"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.oceancleanup.mobile"
+    },
+    "android": {
+      "package": "com.oceancleanup.mobile"
+    }
+  }
+}
+
