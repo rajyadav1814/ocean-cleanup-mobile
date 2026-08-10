@@ -64,7 +64,7 @@ function RootNavigator() {
   const [showSplash, setShowSplash] = React.useState(true);
 
   React.useEffect(() => {
-    const timeout = setTimeout(() => setShowSplash(false), 10000);
+    const timeout = setTimeout(() => setShowSplash(false), 3000);
     return () => clearTimeout(timeout);
   }, []);
 
