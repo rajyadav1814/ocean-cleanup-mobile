@@ -33,6 +33,15 @@ function LeaderboardRow({ row, styles }) {
   );
 }
 
+function formatTimeAgo(dateString) {
+  if (!dateString) return '';
+  const diffSeconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
+  if (diffSeconds < 60) return `${diffSeconds}s ago`;
+  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
+  return `${Math.floor(diffSeconds / 86400)}d ago`;
+}
+
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
@@ -122,15 +131,30 @@ export default function DashboardScreen() {
           {feed.length === 0 ? (
             <Text style={styles.emptyText}>No reports yet — be the first!</Text>
           ) : (
-            feed.slice(0, 5).map((item) => (
-              <View key={item.id} style={styles.feedItem}>
-                <View style={styles.feedMeta}>
-                  <Text style={styles.feedName}>{item.firstName} {item.lastName?.[0] ? `${item.lastName[0]}.` : ''}</Text>
-                  <Text style={styles.feedDesc}>logged a cleanup at {item.location}</Text>
+            feed.slice(0, 5).map((item) => {
+              const statusLabel = item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Unknown';
+              const wasteValue = item.quantity != null ? `${item.quantity} kg` : '0 kg';
+              const timeAgo = formatTimeAgo(item.submittedAt);
+              return (
+                <View key={item.id} style={styles.feedItem}>
+                  <View style={styles.feedAvatar}>
+                    <Text style={styles.feedAvatarText}>{item.initials || `${item.firstName?.[0] || ''}${item.lastName?.[0] || ''}`}</Text>
+                  </View>
+                  <View style={styles.feedTextContent}>
+                    <Text style={styles.feedName}>{item.firstName} {item.lastName?.[0] ? `${item.lastName[0]}.` : ''}</Text>
+                    <Text style={styles.feedDesc}>logged a cleanup at {item.location}</Text>
+                    <View style={styles.feedSummaryRow}>
+                      <Text style={styles.feedSummaryText}>{wasteValue}</Text>
+                      <Text style={styles.feedSummaryText}>· {item.volunteers ?? 0} vol.</Text>
+                      <Text style={styles.feedSummaryText}>· {timeAgo}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.statusBadge, item.status === 'approved' ? styles.statusBadgeApproved : styles.statusBadgePending]}>
+                    <Text style={styles.statusBadgeText}>{statusLabel}</Text>
+                  </View>
                 </View>
-                <Text style={styles.feedTime}>{item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : ''}</Text>
-              </View>
-            ))
+              );
+            })
           )}
         </GlassCard>
       </ScrollView>
@@ -381,18 +405,66 @@ const getStyles = (theme) => StyleSheet.create({
     paddingVertical: 16
   },
   feedItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border
+    borderBottomColor: theme.colors.border,
+    gap: 14
   },
-  feedMeta: {
-    marginBottom: 6
+  feedAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: theme.colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  feedAvatarText: {
+    color: theme.colors.textMain,
+    fontWeight: '700'
+  },
+  feedTextContent: {
+    flex: 1
   },
   feedName: {
     color: theme.colors.textMain,
     fontSize: 14,
     fontWeight: '700'
   },
+  feedDesc: {
+    color: theme.colors.textMuted,
+    fontSize: 13,
+    marginTop: 4
+  },
+  feedSummaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 10
+  },
+  feedSummaryText: {
+    color: theme.colors.textMuted,
+    fontSize: 12
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    alignSelf: 'flex-start'
+  },
+  statusBadgeApproved: {
+    backgroundColor: 'rgba(22, 163, 74, 0.15)'
+  },
+  statusBadgePending: {
+    backgroundColor: 'rgba(251, 191, 36, 0.15)'
+  },
+  statusBadgeText: {
+    color: theme.colors.textMain,
+    fontSize: 11,
+    fontWeight: '700'
+  },
+
   feedDesc: {
     color: theme.colors.textMuted,
     fontSize: 13,
