@@ -6,19 +6,28 @@
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "extra": {
-      "API_BASE_URL": "https://ocean-cleanup-cardano.vercel.app"
+      "API_BASE_URL": "https://ocean-cleanup-cardano.vercel.app",
+      "eas": {
+        "projectId": "784c446d-6d40-419f-a68a-dc4e78cffdba"
+      }
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.oceancleanup.mobile"
+      "bundleIdentifier": "com.oceancleanup.mobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.oceancleanup.mobile"
+      "package": "com.oceancleanup.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png"
+      }
     }
   }
 }
-
