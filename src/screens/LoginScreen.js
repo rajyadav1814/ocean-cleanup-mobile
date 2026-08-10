@@ -24,7 +24,11 @@ export default function LoginScreen() {
     try {
       const data = await authLogin(email, password);
       if (data.ok) {
-        await login(data.user, data.token);
+        if (data.user && data.user.role !== 'citizen') {
+          setError('Access denied: This app is for citizens only.');
+        } else {
+          await login(data.user, data.token);
+        }
       } else {
         setError(data.message || 'Invalid credentials');
       }

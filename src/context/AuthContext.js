@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
         setAuthToken(token);
         try {
           const data = await authVerify(token);
-          if (data.ok && data.user) {
+          if (data.ok && data.user && data.user.role === 'citizen') {
             const normalizedUser = normalizeUser(data.user);
             setUser(normalizedUser);
             setRole(normalizedUser.role);
