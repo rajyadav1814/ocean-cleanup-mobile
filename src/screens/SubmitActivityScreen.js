@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { citizenApi } from '../services/api';
 import { useCitizenOrganizations } from '../services/citizenHooks';
 import ScreenContainer from '../components/ScreenContainer';
@@ -14,6 +15,7 @@ import BrandButton from '../components/BrandButton';
 export default function SubmitActivityScreen() {
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const styles = getStyles(theme);
   const [form, setForm] = useState({ location: '', latitude: '', longitude: '', volunteers: '', waste: '', notes: '', organization: '', category: 'Plastic' });
   const [photo, setPhoto] = useState(null);
@@ -75,7 +77,8 @@ export default function SubmitActivityScreen() {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
-      allowsEditing: true
+      allowsEditing: true,
+      base64: true
     });
 
     if (!result.canceled && result.assets.length > 0) {
@@ -94,7 +97,8 @@ export default function SubmitActivityScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
-      allowsEditing: true
+      allowsEditing: true,
+      base64: true
     });
 
     if (!result.canceled && result.assets.length > 0) {
@@ -114,17 +118,22 @@ export default function SubmitActivityScreen() {
 
     try {
       const payload = {
-        location: form.location,
-        latitude: form.latitude,
-        longitude: form.longitude,
-        volunteers: Number(form.volunteers) || 0,
-        waste: Number(form.waste) || 0,
-        notes: form.notes,
-        organization: form.organization,
+        organizationId: form.organization,
+        contributorId: user?.id || user?.userId || 'unknown',
         category: form.category,
-        photoUri: photo?.uri
+        location: form.location,
+        quantity: String(form.waste),
+        volunteers: String(form.volunteers),
+        evidenceHash: "mock-hash",
+        notes: form.notes,
+        lat: Number(form.latitude),
+        lon: Number(form.longitude),
+        gps: `${form.latitude}, ${form.longitude}`,
+        timestamp: new Date().toISOString(),
+        imageUrls: photo?.base64 ? JSON.stringify([`data:image/jpeg;base64,${photo.base64}`]) : "[]"
       };
       const data = await citizenApi.submitReport(payload);
+      console.log(data, "==============");
       if (data.ok) {
         setMessage('Report submitted successfully.');
         setForm({ location: '', latitude: '', longitude: '', volunteers: '', waste: '', notes: '', organization: '', category: 'Plastic' });

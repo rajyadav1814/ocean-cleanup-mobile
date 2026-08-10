@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { authSignup } from '../services/api';
@@ -45,6 +46,36 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(0);
+  const [isRestoring, setIsRestoring] = useState(true);
+
+  useEffect(() => {
+    const loadSavedState = async () => {
+      try {
+        const savedForm = await AsyncStorage.getItem('@signup_form');
+        const savedStep = await AsyncStorage.getItem('@signup_step');
+        if (savedForm) setForm(JSON.parse(savedForm));
+        if (savedStep) setStep(parseInt(savedStep, 10));
+      } catch (err) {
+        console.error('Failed to load signup progress', err);
+      } finally {
+        setIsRestoring(false);
+      }
+    };
+    loadSavedState();
+  }, []);
+
+  useEffect(() => {
+    if (isRestoring) return;
+    const saveState = async () => {
+      try {
+        await AsyncStorage.setItem('@signup_form', JSON.stringify(form));
+        await AsyncStorage.setItem('@signup_step', step.toString());
+      } catch (err) {
+        console.error('Failed to save signup progress', err);
+      }
+    };
+    saveState();
+  }, [form, step, isRestoring]);
 
   const setField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -109,6 +140,8 @@ export default function SignupScreen() {
 
       const data = await authSignup(payload);
       if (data.ok) {
+        await AsyncStorage.removeItem('@signup_form');
+        await AsyncStorage.removeItem('@signup_step');
         navigation.replace('Login');
       } else {
         setError(data.message || 'Signup failed.');
@@ -120,6 +153,15 @@ export default function SignupScreen() {
       setLoading(false);
     }
   };
+  if (isRestoring) {
+    return (
+      <ScreenContainer>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer>
@@ -181,9 +223,14 @@ export default function SignupScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkButton}>
-            <Text style={styles.linkText}>Already have an account? Sign in</Text>
-          </TouchableOpacity>
+          <View style={styles.linkButton}>
+            <Text style={{ color: theme.colors.textMuted }}>
+              Already have an account?{' '}
+              <Text onPress={() => navigation.navigate('Login')} style={styles.linkText}>
+                Sign in
+              </Text>
+            </Text>
+          </View>
         </GlassCard>
       </ScrollView>
     </ScreenContainer>

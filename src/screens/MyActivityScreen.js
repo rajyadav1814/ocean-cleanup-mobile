@@ -104,7 +104,7 @@ function ActivityCard({ item, styles, onImagePress }) {
         </View>
         <View style={styles.detailBlockRight}>
           <Text style={styles.detailLabel}>Quantity</Text>
-          <Text style={styles.quantityValue}>{typeof item.waste === 'number' ? `${item.waste.toFixed(2)} kg` : item.waste || '0.00 kg'}</Text>
+          <Text style={styles.quantityValue}>{typeof item.quantity === 'number' ? `${item.quantity.toFixed(2)} kg` : item.quantity || '0.00 kg'}</Text>
         </View>
       </View>
     </GlassCard>

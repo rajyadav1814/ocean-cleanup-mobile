@@ -69,9 +69,14 @@ export default function LoginScreen() {
 
           <BrandButton title={loading ? 'Signing in…' : 'Sign in'} onPress={handleSubmit} disabled={loading} />
 
-          <TouchableOpacity onPress={() => navigation.navigate('Signup')} style={styles.linkButton}>
-            <Text style={styles.linkText}>New here? Create an account</Text>
-          </TouchableOpacity>
+          <View style={styles.linkButton}>
+            <Text style={{ color: theme.colors.textMuted }}>
+              New here?{' '}
+              <Text onPress={() => navigation.navigate('Signup')} style={styles.linkText}>
+                Create an account
+              </Text>
+            </Text>
+          </View>
         </GlassCard>
       </View>
     </ScreenContainer>
