@@ -36,7 +36,6 @@ export function useCitizenLeaderboard(refresh = 0) {
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, [refresh]);
-
   return { leaderboard, myRow, loading };
 }
 

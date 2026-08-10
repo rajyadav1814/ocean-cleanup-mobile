@@ -30,16 +30,16 @@ export const themes = {
   },
   light: {
     colors: {
-      background: '#f7f9fc',
-      surface: 'rgba(255,255,255,0.93)',
-      surfaceAlt: 'rgba(242,247,255,0.95)',
-      border: 'rgba(61,214,224,0.18)',
-      borderGlow: 'rgba(61,214,224,0.25)',
+      background: '#f3f7fb',
+      surface: '#f8fbff',
+      surfaceAlt: '#edf4fb',
+      border: 'rgba(15,23,42,0.08)',
+      borderGlow: 'rgba(13,148,136,0.16)',
       primary: '#0d9488',
       primaryHover: '#14b8a6',
       secondary: '#0ea5e9',
       textMain: '#0f172a',
-      textMuted: 'rgba(15,23,42,0.68)',
+      textMuted: 'rgba(15,23,42,0.72)',
       success: '#16a34a',
       warning: '#d97706',
       danger: '#b91c1c'

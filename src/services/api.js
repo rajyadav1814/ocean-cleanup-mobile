@@ -99,7 +99,7 @@ export const citizenApi = {
   getStats: () => apiGet('/api/citizen/stats'),
   getLeaderboard: () => apiGet('/api/citizen/leaderboard'),
   getFeed: (limit = 15) => apiGet(`/api/citizen/feed?limit=${limit}`),
-  getActivities: () => apiGet('/api/activities'),
+  getActivities: () => apiGet('/api/citizen/activities'),
   getOrganizations: () => apiGet('/api/dashboard/organizations'),
   submitReport: (formData) => apiPost('/api/activities', formData)
 };

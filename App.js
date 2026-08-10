@@ -27,11 +27,14 @@ function AuthTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: theme.colors.background,
           borderTopColor: theme.colors.border,
+          borderTopWidth: 1,
           height: 72,
           paddingBottom: 8,
-          paddingTop: 8
+          paddingTop: 8,
+          elevation: 0,
+          shadowOpacity: 0
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,

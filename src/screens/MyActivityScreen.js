@@ -6,6 +6,31 @@ import { useCitizenActivities } from '../services/citizenHooks';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
 
+function normalizeImageUrl(value) {
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith('ipfs://')) {
+    return `https://gateway.pinata.cloud/ipfs/${trimmed.replace('ipfs://', '')}`;
+  }
+
+  if (/^(Qm[1-9A-HJ-NP-Za-k]{44,}|baf[a-z0-9]{20,})$/i.test(trimmed)) {
+    return `https://gateway.pinata.cloud/ipfs/${trimmed}`;
+  }
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith('/ipfs/')) {
+    return `https://gateway.pinata.cloud${trimmed}`;
+  }
+
+  return trimmed;
+}
+
 function getImageUrls(item) {
   const candidateSources = [
     item.images,
@@ -17,15 +42,18 @@ function getImageUrls(item) {
   ];
 
   for (const source of candidateSources) {
-    if (Array.isArray(source)) {
-      const filtered = source.filter((value) => typeof value === 'string' && value.length > 0);
-      if (filtered.length > 0) {
-        return filtered;
-      }
-    }
+    const values = Array.isArray(source)
+      ? source
+      : typeof source === 'string' && source.length > 0
+        ? [source]
+        : [];
 
-    if (typeof source === 'string' && source.length > 0) {
-      return [source];
+    const normalized = values
+      .map((value) => normalizeImageUrl(value))
+      .filter(Boolean);
+
+    if (normalized.length > 0) {
+      return normalized;
     }
   }
 
@@ -54,7 +82,7 @@ function ActivityCard({ item, styles, onImagePress }) {
           </View>
         )}
         <View style={styles.statusBadge}>
-          <Text style={styles.statusBadgeText}>{item.status || 'Approved'}</Text>
+          <Text style={styles.statusBadgeText}>{item.status === 'approved' ? 'Approved' : 'Pending'}</Text>
         </View>
         {photoCount > 1 ? (
           <View style={styles.moreBadge}>

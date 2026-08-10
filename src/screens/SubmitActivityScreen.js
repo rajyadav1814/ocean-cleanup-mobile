@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { citizenApi } from '../services/api';
@@ -17,12 +18,52 @@ export default function SubmitActivityScreen() {
   const [form, setForm] = useState({ location: '', latitude: '', longitude: '', volunteers: '', waste: '', notes: '', organization: '', category: 'Plastic' });
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
 
   const { organizations, loading: orgLoading } = useCitizenOrganizations();
   const categories = ['Plastic', 'Glass', 'Metal', 'Mixed'];
+
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
+  const getCurrentLocation = async (showMessage = false) => {
+    try {
+      setLocationLoading(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setMessage('Location permission is required to use your current position.');
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const { latitude, longitude } = currentLocation.coords;
+      const [address] = await Location.reverseGeocodeAsync({ latitude, longitude });
+
+      const locationName = [address?.name, address?.street, address?.city, address?.region, address?.country]
+        .filter(Boolean)
+        .join(', ');
+
+      setForm((prev) => ({
+        ...prev,
+        location: locationName || `Current location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
+        latitude: latitude.toFixed(6),
+        longitude: longitude.toFixed(6)
+      }));
+
+      if (showMessage) {
+        setMessage('Current location loaded.');
+      }
+    } catch (error) {
+      console.error(error);
+      setMessage('Unable to fetch your current location.');
+    } finally {
+      setLocationLoading(false);
+    }
+  };
 
   const handleTakePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -143,9 +184,22 @@ export default function SubmitActivityScreen() {
                 autoCapitalize="words"
               />
 
-              <TouchableOpacity style={styles.mapCard} activeOpacity={0.85}>
-                <Text style={styles.mapButtonText}>ACCESS LOCATION & LOAD MAP</Text>
+              <TouchableOpacity
+                style={styles.locationButton}
+                activeOpacity={0.85}
+                onPress={() => getCurrentLocation(true)}
+                disabled={locationLoading}
+              >
+                <Ionicons name="locate-outline" size={18} color={theme.colors.primary} />
+                <Text style={styles.locationButtonText}>{locationLoading ? 'Fetching location…' : 'Use current location'}</Text>
               </TouchableOpacity>
+
+              <View style={styles.locationInfoCard}>
+                <Text style={styles.locationInfoTitle}>Live coordinates</Text>
+                <Text style={styles.locationInfoText}>
+                  {form.latitude && form.longitude ? `${form.latitude}, ${form.longitude}` : 'Latitude and longitude will appear here.'}
+                </Text>
+              </View>
 
               <View style={styles.locationRow}>
                 <View style={styles.smallInputWrapper}>
@@ -364,21 +418,41 @@ const getStyles = (theme) => StyleSheet.create({
   selectPlaceholder: {
     color: theme.colors.textMuted
   },
-  mapCard: {
-    height: 220,
-    borderRadius: 20,
+  locationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surfaceAlt,
-    marginBottom: 16,
-    alignItems: 'center',
-    justifyContent: 'center'
+    paddingVertical: 12,
+    marginBottom: 12
   },
-  mapButtonText: {
+  locationButtonText: {
     color: theme.colors.primary,
     fontWeight: '700',
-    letterSpacing: 1,
-    textAlign: 'center'
+    marginLeft: 6
+  },
+  locationInfoCard: {
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 12,
+    marginBottom: 16
+  },
+  locationInfoTitle: {
+    color: theme.colors.textMain,
+    fontWeight: '700',
+    fontSize: 13,
+    marginBottom: 4
+  },
+  locationInfoText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18
   },
   locationRow: {
     flexDirection: 'row',

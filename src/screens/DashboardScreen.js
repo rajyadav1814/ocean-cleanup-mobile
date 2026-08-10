@@ -68,9 +68,6 @@ export default function DashboardScreen() {
         <GlassCard style={styles.heroCard}>
           <View style={styles.heroHeader}>
             <Text style={styles.heroTag}>CITIZEN SPACE</Text>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>{`${(user?.firstName?.[0] || user?.displayName?.[0] || 'A').toUpperCase()}${(user?.lastName?.[0] || '').toUpperCase()}`}</Text>
-            </View>
           </View>
           <Text style={styles.heroTitle}>Hi {firstName}, thanks for keeping the coast clean</Text>
           <Text style={styles.heroSubtitle}>{totalReports} reports · member since {stats?.memberSince ? new Date(stats.memberSince).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : 'recently'}</Text>

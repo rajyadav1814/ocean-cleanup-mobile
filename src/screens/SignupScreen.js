@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -6,6 +6,24 @@ import { authSignup } from '../services/api';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
 import BrandButton from '../components/BrandButton';
+
+const steps = [
+  {
+    key: 'account',
+    title: 'Account basics',
+    subtitle: 'Create your sign-in details first.'
+  },
+  {
+    key: 'profile',
+    title: 'Profile details',
+    subtitle: 'Tell us a bit about who you are.'
+  },
+  {
+    key: 'preferences',
+    title: 'Preferences',
+    subtitle: 'Add details to complete your profile.'
+  }
+];
 
 export default function SignupScreen() {
   const navigation = useNavigation();
@@ -26,19 +44,53 @@ export default function SignupScreen() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [step, setStep] = useState(0);
 
   const setField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
-  const handleSubmit = async () => {
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !form.username.trim() || !form.password || !form.confirmPassword) {
-      setError('Please complete all required fields.');
-      return;
-    }
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match.');
-      return;
+  const currentStep = steps[step];
+  const progressPercent = useMemo(() => ((step + 1) / steps.length) * 100, [step]);
+
+  const validateStep = () => {
+    if (step === 0) {
+      if (!form.email.trim() || !form.username.trim() || !form.password || !form.confirmPassword) {
+        setError('Please fill in your email, username, and password.');
+        return false;
+      }
+      if (form.password !== form.confirmPassword) {
+        setError('Passwords do not match.');
+        return false;
+      }
+      return true;
     }
 
+    if (step === 1) {
+      if (!form.firstName.trim() || !form.lastName.trim()) {
+        setError('Please enter your first and last name.');
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  };
+
+  const handleNext = () => {
+    setError('');
+    if (!validateStep()) return;
+    if (step < steps.length - 1) {
+      setStep(step + 1);
+      return;
+    }
+    handleSubmit();
+  };
+
+  const handleBack = () => {
+    setError('');
+    if (step > 0) setStep(step - 1);
+  };
+
+  const handleSubmit = async () => {
     setError('');
     setLoading(true);
     try {
@@ -48,7 +100,7 @@ export default function SignupScreen() {
         email: form.email,
         username: form.username,
         password: form.password,
-        role: form.role === 'citizen' ? 'contributor' : form.role,
+        role: 'citizen',
         jobTitle: form.jobTitle || undefined,
         experience: form.experience || undefined,
         walletAddress: form.walletAddress || undefined,
@@ -71,37 +123,63 @@ export default function SignupScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <GlassCard>
-          <Text style={styles.title}>Create an account</Text>
-          <Text style={styles.subtitle}>Join the cleanup community and start logging reports.</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <GlassCard style={styles.card}>
+          <View style={styles.progressWrap}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+            </View>
+            <Text style={styles.stepText}>{step + 1} of {steps.length}</Text>
+          </View>
+
+          <Text style={styles.title}>{currentStep.title}</Text>
+          <Text style={styles.subtitle}>{currentStep.subtitle}</Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <View style={styles.row}>
-            <TextInput placeholder="First name" placeholderTextColor={theme.colors.textMuted} style={[styles.input, styles.halfInput]} value={form.firstName} onChangeText={(value) => setField('firstName', value)} />
-            <TextInput placeholder="Last name" placeholderTextColor={theme.colors.textMuted} style={[styles.input, styles.halfInput]} value={form.lastName} onChangeText={(value) => setField('lastName', value)} />
-          </View>
-          <TextInput placeholder="Email" placeholderTextColor={theme.colors.textMuted} keyboardType="email-address" autoCapitalize="none" style={styles.input} value={form.email} onChangeText={(value) => setField('email', value)} />
-          <TextInput placeholder="Username" placeholderTextColor={theme.colors.textMuted} autoCapitalize="none" style={styles.input} value={form.username} onChangeText={(value) => setField('username', value)} />
-          <TextInput placeholder="Password" placeholderTextColor={theme.colors.textMuted} secureTextEntry style={styles.input} value={form.password} onChangeText={(value) => setField('password', value)} />
-          <TextInput placeholder="Confirm password" placeholderTextColor={theme.colors.textMuted} secureTextEntry style={styles.input} value={form.confirmPassword} onChangeText={(value) => setField('confirmPassword', value)} />
+          {step === 0 ? (
+            <View>
+              <TextInput placeholder="Email" placeholderTextColor={theme.colors.textMuted} keyboardType="email-address" autoCapitalize="none" style={styles.input} value={form.email} onChangeText={(value) => setField('email', value)} />
+              <TextInput placeholder="Username" placeholderTextColor={theme.colors.textMuted} autoCapitalize="none" style={styles.input} value={form.username} onChangeText={(value) => setField('username', value)} />
+              <TextInput placeholder="Password" placeholderTextColor={theme.colors.textMuted} secureTextEntry style={styles.input} value={form.password} onChangeText={(value) => setField('password', value)} />
+              <TextInput placeholder="Confirm password" placeholderTextColor={theme.colors.textMuted} secureTextEntry style={styles.input} value={form.confirmPassword} onChangeText={(value) => setField('confirmPassword', value)} />
+            </View>
+          ) : null}
 
-          <View style={styles.roleRow}>
-            <TouchableOpacity style={[styles.roleButton, form.role === 'citizen' && styles.roleButtonActive]} onPress={() => setField('role', 'citizen')}>
-              <Text style={[styles.roleText, form.role === 'citizen' && styles.roleTextActive]}>Citizen</Text>
+          {step === 1 ? (
+            <View>
+              <View style={styles.row}>
+                <TextInput placeholder="First name" placeholderTextColor={theme.colors.textMuted} style={[styles.input, styles.halfInput]} value={form.firstName} onChangeText={(value) => setField('firstName', value)} />
+                <TextInput placeholder="Last name" placeholderTextColor={theme.colors.textMuted} style={[styles.input, styles.halfInput]} value={form.lastName} onChangeText={(value) => setField('lastName', value)} />
+              </View>
+            </View>
+          ) : null}
+
+          {step === 2 ? (
+            <View>
+
+              <TextInput placeholder="Job title (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.jobTitle} onChangeText={(value) => setField('jobTitle', value)} />
+              <TextInput placeholder="Experience (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.experience} onChangeText={(value) => setField('experience', value)} />
+              <TextInput placeholder="Wallet address (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.walletAddress} onChangeText={(value) => setField('walletAddress', value)} />
+              {/* <TextInput placeholder="Organization ID (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.organizationId} onChangeText={(value) => setField('organizationId', value)} /> */}
+            </View>
+          ) : null}
+
+          <View style={styles.actionsRow}>
+            {step > 0 ? (
+              <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]} onPress={handleBack}>
+                <Text style={styles.secondaryButtonText}>Back</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.spacer} />
+            )}
+            <TouchableOpacity style={[styles.actionButton, styles.primaryButton]} onPress={handleNext} disabled={loading}>
+              <Text style={styles.primaryButtonText}>{step === steps.length - 1 ? (loading ? 'Creating account…' : 'Create account') : 'Next'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.roleButton, form.role === 'contributor' && styles.roleButtonActive]} onPress={() => setField('role', 'contributor')}>
-              <Text style={[styles.roleText, form.role === 'contributor' && styles.roleTextActive]}>Contributor</Text>
-            </TouchableOpacity>
           </View>
-
-          <TextInput placeholder="Job title (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.jobTitle} onChangeText={(value) => setField('jobTitle', value)} />
-          <TextInput placeholder="Experience (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.experience} onChangeText={(value) => setField('experience', value)} />
-          <TextInput placeholder="Wallet address (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.walletAddress} onChangeText={(value) => setField('walletAddress', value)} />
-          <TextInput placeholder="Organization ID (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.organizationId} onChangeText={(value) => setField('organizationId', value)} />
-
-          <BrandButton title={loading ? 'Creating account…' : 'Create account'} onPress={handleSubmit} disabled={loading} />
 
           <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkButton}>
             <Text style={styles.linkText}>Already have an account? Sign in</Text>
@@ -113,9 +191,37 @@ export default function SignupScreen() {
 }
 
 const getStyles = (theme) => StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 20
+  },
+  card: {
+    width: '100%'
+  },
+  progressWrap: {
+    marginBottom: 14
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginBottom: 6
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: theme.colors.primary,
+    borderRadius: 999
+  },
+  stepText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600'
+  },
   title: {
     color: theme.colors.textMain,
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '700',
     marginBottom: 8
   },
@@ -142,31 +248,54 @@ const getStyles = (theme) => StyleSheet.create({
     gap: 12,
     marginBottom: 12
   },
-  roleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginBottom: 16
-  },
-  roleButton: {
-    flex: 1,
-    padding: 14,
-    backgroundColor: theme.colors.surface,
+  infoBox: {
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    alignItems: 'center'
+    padding: 14,
+    marginBottom: 14
   },
-  roleButtonActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary
+  infoTitle: {
+    color: theme.colors.textMain,
+    fontWeight: '700',
+    marginBottom: 4
   },
-  roleText: {
+  infoText: {
     color: theme.colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    marginTop: 10,
+    gap: 10
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  primaryButton: {
+    backgroundColor: theme.colors.primary
+  },
+  secondaryButton: {
+    backgroundColor: theme.colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.colors.border
+  },
+  primaryButtonText: {
+    color: '#ffffff',
     fontWeight: '700'
   },
-  roleTextActive: {
-    color: theme.colors.textMain
+  secondaryButtonText: {
+    color: theme.colors.textMain,
+    fontWeight: '700'
+  },
+  spacer: {
+    flex: 1
   },
   linkButton: {
     marginTop: 18,
@@ -175,23 +304,6 @@ const getStyles = (theme) => StyleSheet.create({
   linkText: {
     color: theme.colors.primary,
     fontWeight: '700'
-  },
-  pageTitle: {
-    color: theme.colors.primary,
-    fontSize: 32,
-    fontWeight: '800',
-    textAlign: 'center'
-  },
-  pageSubtitle: {
-    color: theme.colors.textMuted,
-    fontSize: 15,
-    textAlign: 'center',
-    marginTop: 6,
-    marginBottom: 10
-  },
-  headerContainer: {
-    paddingHorizontal: 18,
-    marginBottom: 18
   },
   error: {
     color: theme.colors.danger,

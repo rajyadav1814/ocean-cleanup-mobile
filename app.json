@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Ocean Cleanup Mobile",
+    "name": "BLUEMIND",
     "slug": "ocean-cleanup-mobile",
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "extra": {
       "API_BASE_URL": "https://ocean-cleanup-cardano.vercel.app",
       "eas": {
