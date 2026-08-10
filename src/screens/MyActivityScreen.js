@@ -1,37 +1,51 @@
 import React from 'react';
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useCitizenActivities } from '../services/citizenHooks';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
 
-function ActivityCard({ item, styles }) {
-  const activityDate = item.timestamp ? new Date(item.timestamp) : null;
-  const imageSource =
-    item.imageGatewayUrl?.[0] ||
-    item.imageIpfsUrl?.[0] ||
-    item.imageCid?.[0] ||
-    null;
+function getImageUrls(item) {
+  const candidateSources = [
+    item.images,
+    item.imageUrls,
+    item.imageGatewayUrl,
+    item.imageIpfsUrl,
+    item.imageCid,
+    item.image
+  ];
 
-  const photoCount =
-    Math.max(
-      item.imageGatewayUrl?.length || 0,
-      item.imageIpfsUrl?.length || 0,
-      item.imageCid?.length || 0
-    );
-  const validImage = typeof imageSource === 'string' && imageSource.length > 0;
-  const imageUri = validImage
-    ? imageSource.startsWith('http')
-      ? imageSource
-      : imageSource.startsWith('ipfs://')
-      ? imageSource.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/')
-      : `https://ocean-cleanup-cardano.vercel.app${imageSource}`
-    : null;
+  for (const source of candidateSources) {
+    if (Array.isArray(source)) {
+      const filtered = source.filter((value) => typeof value === 'string' && value.length > 0);
+      if (filtered.length > 0) {
+        return filtered;
+      }
+    }
+
+    if (typeof source === 'string' && source.length > 0) {
+      return [source];
+    }
+  }
+
+  return [];
+}
+
+function ActivityCard({ item, styles, onImagePress }) {
+  const activityDate = item.timestamp ? new Date(item.timestamp) : null;
+  const imageUrls = getImageUrls(item);
+  const imageUri = imageUrls[0] || null;
+  const photoCount = imageUrls.length;
 
   return (
     <GlassCard style={styles.activityCard}>
-      <View style={styles.activityImageWrapper}>
+      <TouchableOpacity
+        style={styles.activityImageWrapper}
+        activeOpacity={0.9}
+        onPress={() => imageUri && onImagePress(item)}
+        disabled={!imageUri}
+      >
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={styles.activityImage} resizeMode="cover" />
         ) : (
@@ -47,7 +61,7 @@ function ActivityCard({ item, styles }) {
             <Text style={styles.moreBadgeText}>+{photoCount - 1} more</Text>
           </View>
         ) : null}
-      </View>
+      </TouchableOpacity>
       <View style={styles.activityHeader}>
         <View style={styles.activityHeaderLeft}>
           <Text style={styles.activityLocation}>{item.location || 'Unknown location'}</Text>
@@ -74,6 +88,31 @@ export default function MyActivityScreen() {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const { activities, loading } = useCitizenActivities(isFocused ? 1 : 0);
+  const [selectedImage, setSelectedImage] = React.useState(null);
+
+  const closeImagePreview = () => setSelectedImage(null);
+  const handleImagePress = (item) => {
+    const images = getImageUrls(item);
+    if (images.length > 0) {
+      setSelectedImage({ images, index: 0 });
+    }
+  };
+
+  const goToPreviousImage = () => {
+    setSelectedImage((current) =>
+      current && current.index > 0
+        ? { ...current, index: current.index - 1 }
+        : current
+    );
+  };
+
+  const goToNextImage = () => {
+    setSelectedImage((current) =>
+      current && current.index < current.images.length - 1
+        ? { ...current, index: current.index + 1 }
+        : current
+    );
+  };
 
   return (
     <ScreenContainer style={styles.container}>
@@ -92,11 +131,67 @@ export default function MyActivityScreen() {
         <FlatList
           data={activities}
           keyExtractor={(item) => item.id?.toString() || item._id || String(item.activityId) || String(Math.random())}
-          renderItem={({ item }) => <ActivityCard item={item} styles={styles} />}
+          renderItem={({ item }) => <ActivityCard item={item} styles={styles} onImagePress={handleImagePress} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={closeImagePreview}>
+        <Pressable style={styles.modalOverlay} onPress={closeImagePreview}>
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHeader}>
+              <View style={styles.counterBadge}>
+                <Text style={styles.counterText}>{selectedImage ? `${selectedImage.index + 1}/${selectedImage.images.length}` : ''}</Text>
+              </View>
+              <TouchableOpacity style={styles.closeButton} onPress={closeImagePreview} activeOpacity={0.8}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            {selectedImage ? (
+              <View style={styles.modalImageWrapper}>
+                <TouchableOpacity
+                  style={styles.modalNavArrowLeft}
+                  onPress={goToPreviousImage}
+                  activeOpacity={0.8}
+                  disabled={selectedImage.index === 0}
+                >
+                  <Text style={styles.modalNavArrowText}>‹</Text>
+                </TouchableOpacity>
+                <Image source={{ uri: selectedImage.images[selectedImage.index] }} style={styles.modalImage} resizeMode="contain" />
+                <TouchableOpacity
+                  style={styles.modalNavArrowRight}
+                  onPress={goToNextImage}
+                  activeOpacity={0.8}
+                  disabled={selectedImage.index === selectedImage.images.length - 1}
+                >
+                  <Text style={styles.modalNavArrowText}>›</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+            {selectedImage && selectedImage.images.length > 1 ? (
+              <View style={styles.thumbnailSection}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.thumbnailScroll}
+                >
+                  {selectedImage.images.map((uri, index) => (
+                    <TouchableOpacity
+                      key={`${uri}-${index}`}
+                      onPress={() => setSelectedImage({ ...selectedImage, index })}
+                      activeOpacity={0.8}
+                      style={[styles.thumbnailWrapper, selectedImage.index === index && styles.thumbnailWrapperActive]}
+                    >
+                      <Image source={{ uri }} style={styles.thumbnailImage} resizeMode="cover" />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+          </View>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -234,5 +329,120 @@ const getStyles = (theme) => StyleSheet.create({
   quantityValue: {
     color: theme.colors.textMain,
     fontWeight: '700'
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  modalContent: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  modalImage: {
+    width: '100%',
+    height: '80%',
+    borderRadius: 20
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 999,
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700'
+  },
+  modalHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12
+  },
+  counterBadge: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    alignSelf: 'flex-start'
+  },
+  counterText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700'
+  },
+  modalImageWrapper: {
+    width: '100%',
+    height: '70%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative'
+  },
+  modalNavArrowLeft: {
+    position: 'absolute',
+    left: 8,
+    top: '50%',
+    transform: [{ translateY: -22 }],
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 3
+  },
+  modalNavArrowRight: {
+    position: 'absolute',
+    right: 8,
+    top: '50%',
+    transform: [{ translateY: -22 }],
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 3
+  },
+  modalNavArrowText: {
+    color: '#fff',
+    fontSize: 28,
+    lineHeight: 28,
+    fontWeight: '700'
+  },
+  thumbnailSection: {
+    marginTop: 16,
+    width: '100%'
+  },
+  thumbnailScroll: {
+    paddingVertical: 8
+  },
+  thumbnailWrapper: {
+    marginRight: 12,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent'
+  },
+  thumbnailWrapperActive: {
+    borderColor: '#4dd0e1'
+  },
+  thumbnailImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 16
   }
 });
