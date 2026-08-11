@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BLUEMIND",
-    "slug": "ocean-cleanup-mobile",
+    "slug": "bluemind",
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
@@ -18,13 +18,13 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.oceancleanup.mobile",
+      "bundleIdentifier": "com.bluemind.mobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.oceancleanup.mobile",
+      "package": "com.bluemind.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png"
       }
