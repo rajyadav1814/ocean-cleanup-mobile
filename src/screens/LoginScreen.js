@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -15,10 +16,23 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleSubmit = async () => {
+    const errors = {};
+    if (!email.trim()) errors.email = 'Email is required.';
+    else if (!/\S+@\S+\.\S+/.test(email.trim())) errors.email = 'Enter a valid email address.';
+    if (!password) errors.password = 'Password is required.';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
     setError('');
     setLoading(true);
     try {
@@ -54,18 +68,31 @@ export default function LoginScreen() {
             placeholderTextColor={theme.colors.textMuted}
             keyboardType="email-address"
             autoCapitalize="none"
-            style={styles.input}
+            style={[styles.input, fieldErrors.email && styles.inputError]}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(v) => {
+              setEmail(v);
+              if (fieldErrors.email) setFieldErrors((e) => ({ ...e, email: undefined }));
+            }}
           />
-          <TextInput
-            placeholder="Password"
-            placeholderTextColor={theme.colors.textMuted}
-            secureTextEntry
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-          />
+          {fieldErrors.email ? <Text style={styles.errorText}>{fieldErrors.email}</Text> : null}
+          <View style={[styles.passwordWrap, fieldErrors.password && styles.passwordWrapError]}>
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor={theme.colors.textMuted}
+              secureTextEntry={!showPassword}
+              style={[styles.input, styles.passwordInput]}
+              value={password}
+              onChangeText={(v) => {
+                setPassword(v);
+                if (fieldErrors.password) setFieldErrors((e) => ({ ...e, password: undefined }));
+              }}
+            />
+            <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPassword(v => !v)}>
+              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color={theme.colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+          {fieldErrors.password ? <Text style={styles.errorText}>{fieldErrors.password}</Text> : null}
 
           <BrandButton title={loading ? 'Signing in…' : 'Sign in'} onPress={handleSubmit} disabled={loading} />
 
@@ -116,6 +143,22 @@ const getStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 14
   },
+  passwordWrap: {
+    position: 'relative',
+    marginBottom: 14
+  },
+  passwordInput: {
+    marginBottom: 0,
+    paddingRight: 52
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 14,
+    top: 0,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
   linkButton: {
     marginTop: 18,
     alignItems: 'center'
@@ -128,5 +171,22 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.colors.danger,
     marginBottom: 12,
     textAlign: 'center'
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: -10,
+    marginBottom: 10,
+    marginLeft: 4,
+    fontWeight: '600'
+  },
+  inputError: {
+    borderColor: '#ef4444',
+    borderWidth: 1.5
+  },
+  passwordWrapError: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#ef4444'
   }
 });

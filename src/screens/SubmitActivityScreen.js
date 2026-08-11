@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Image, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { citizenApi } from '../services/api';
@@ -16,28 +16,45 @@ export default function SubmitActivityScreen() {
   const navigation = useNavigation();
   const { theme } = useTheme();
   const { user } = useAuth();
+  const isFocused = useIsFocused();
   const styles = getStyles(theme);
   const [form, setForm] = useState({ location: '', latitude: '', longitude: '', volunteers: '', waste: '', notes: '', organization: '', category: 'Plastic' });
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [locationDeniedPermanently, setLocationDeniedPermanently] = useState(false);
   const [message, setMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
 
   const { organizations, loading: orgLoading } = useCitizenOrganizations();
   const categories = ['Plastic', 'Glass', 'Metal', 'Mixed'];
 
+  // Re-ask for location every time the tab comes into focus, but only if we
+  // don't already have a location (avoids refetching on every tab switch).
   useEffect(() => {
-    getCurrentLocation();
-  }, []);
+    if (isFocused && !form.latitude) {
+      getCurrentLocation();
+    }
+  }, [isFocused]);
 
   const getCurrentLocation = async (showMessage = false) => {
     try {
       setLocationLoading(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      setLocationDeniedPermanently(false);
+
+      const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
+
       if (status !== 'granted') {
-        setMessage('Location permission is required to use your current position.');
+        if (!canAskAgain) {
+          // Permanently denied — OS won't show the dialog again
+          setLocationDeniedPermanently(true);
+          setMessage('Location access is blocked. Please enable it in your device settings.');
+        } else {
+          // Denied but can ask again next time
+          setMessage('Location permission denied. Tap "Use current location" to try again.');
+        }
         return;
       }
 
@@ -56,9 +73,7 @@ export default function SubmitActivityScreen() {
         longitude: longitude.toFixed(6)
       }));
 
-      if (showMessage) {
-        setMessage('Current location loaded.');
-      }
+      setMessage(showMessage ? 'Current location loaded.' : '');
     } catch (error) {
       console.error(error);
       setMessage('Unable to fetch your current location.');
@@ -108,11 +123,18 @@ export default function SubmitActivityScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!form.location.trim() || !form.waste.trim()) {
-      setMessage('Location and waste quantity are required.');
+    const errors = {};
+    if (!form.latitude) errors.location = 'Location is required. Tap the button above to detect it.';
+    if (!form.volunteers.trim()) errors.volunteers = 'This field is required.';
+    if (!form.waste.trim()) errors.waste = 'This field is required.';
+    if (!form.organization) errors.organization = 'Please select an organization.';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
+    setFieldErrors({});
     setLoading(true);
     setMessage('');
 
@@ -182,82 +204,72 @@ export default function SubmitActivityScreen() {
                 </View>
               ) : null}
 
-              <Text style={styles.fieldLabel}>Location details</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter a custom name for this location"
-                placeholderTextColor={theme.colors.textMuted}
-                value={form.location}
-                onChangeText={(value) => setForm((prev) => ({ ...prev, location: value }))}
-                returnKeyType="next"
-                autoCapitalize="words"
-              />
+              <Text style={styles.fieldLabel}>Location</Text>
+              {fieldErrors.location ? <Text style={styles.errorText}>{fieldErrors.location}</Text> : null}
 
               <TouchableOpacity
-                style={styles.locationButton}
+                style={[styles.locationButton, (!!form.latitude && !locationDeniedPermanently) && styles.locationButtonDisabled]}
                 activeOpacity={0.85}
-                onPress={() => getCurrentLocation(true)}
-                disabled={locationLoading}
+                onPress={locationDeniedPermanently ? () => Linking.openSettings() : () => getCurrentLocation(true)}
+                disabled={locationLoading || (!!form.latitude && !locationDeniedPermanently)}
               >
-                <Ionicons name="locate-outline" size={18} color={theme.colors.primary} />
-                <Text style={styles.locationButtonText}>{locationLoading ? 'Fetching location…' : 'Use current location'}</Text>
+                <Ionicons
+                  name={locationDeniedPermanently ? 'settings-outline' : form.latitude ? 'checkmark-circle-outline' : 'locate-outline'}
+                  size={18}
+                  color={form.latitude && !locationDeniedPermanently ? theme.colors.textMuted : theme.colors.primary}
+                />
+                <Text style={[styles.locationButtonText, (!!form.latitude && !locationDeniedPermanently) && styles.locationButtonTextDisabled]}>
+                  {locationLoading
+                    ? 'Fetching location…'
+                    : locationDeniedPermanently
+                    ? 'Open Settings'
+                    : form.latitude
+                    ? 'Location detected'
+                    : 'Use current location'}
+                </Text>
               </TouchableOpacity>
 
               <View style={styles.locationInfoCard}>
-                <Text style={styles.locationInfoTitle}>Live coordinates</Text>
+                <Text style={styles.locationInfoTitle}>📍 Detected location</Text>
+                {form.location ? (
+                  <Text style={styles.locationInfoName}>{form.location}</Text>
+                ) : null}
                 <Text style={styles.locationInfoText}>
-                  {form.latitude && form.longitude ? `${form.latitude}, ${form.longitude}` : 'Latitude and longitude will appear here.'}
+                  {form.latitude && form.longitude
+                    ? `${form.latitude}, ${form.longitude}`
+                    : 'Location will appear here once detected.'}
                 </Text>
               </View>
 
-              <View style={styles.locationRow}>
-                <View style={styles.smallInputWrapper}>
-                  <Text style={styles.smallLabel}>Latitude</Text>
-                  <TextInput
-                    style={styles.smallInput}
-                    placeholder="0.0000"
-                    placeholderTextColor={theme.colors.textMuted}
-                    value={form.latitude || ''}
-                    onChangeText={(value) => setForm((prev) => ({ ...prev, latitude: value }))}
-                    keyboardType="decimal-pad"
-                  />
-                </View>
-                <View style={styles.smallInputWrapper}>
-                  <Text style={styles.smallLabel}>Longitude</Text>
-                  <TextInput
-                    style={styles.smallInput}
-                    placeholder="0.0000"
-                    placeholderTextColor={theme.colors.textMuted}
-                    value={form.longitude || ''}
-                    onChangeText={(value) => setForm((prev) => ({ ...prev, longitude: value }))}
-                    keyboardType="decimal-pad"
-                  />
-                </View>
-              </View>
-
-              <Text style={styles.helpText}>Drag the marker or click anywhere on the map to adjust the coordinates.</Text>
-
               <Text style={styles.fieldLabel}>Volunteers</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, fieldErrors.volunteers && styles.inputError]}
                 placeholder="How many volunteers?"
                 placeholderTextColor={theme.colors.textMuted}
                 value={form.volunteers}
-                onChangeText={(value) => setForm((prev) => ({ ...prev, volunteers: value }))}
+                onChangeText={(value) => {
+                  setForm((prev) => ({ ...prev, volunteers: value }));
+                  if (fieldErrors.volunteers) setFieldErrors((e) => ({ ...e, volunteers: undefined }));
+                }}
                 keyboardType="numeric"
                 returnKeyType="next"
               />
+              {fieldErrors.volunteers ? <Text style={styles.errorText}>{fieldErrors.volunteers}</Text> : null}
 
               <Text style={styles.fieldLabel}>Waste (kg)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, fieldErrors.waste && styles.inputError]}
                 placeholder="Kg collected"
                 placeholderTextColor={theme.colors.textMuted}
                 value={form.waste}
-                onChangeText={(value) => setForm((prev) => ({ ...prev, waste: value }))}
+                onChangeText={(value) => {
+                  setForm((prev) => ({ ...prev, waste: value }));
+                  if (fieldErrors.waste) setFieldErrors((e) => ({ ...e, waste: undefined }));
+                }}
                 keyboardType="numeric"
                 returnKeyType="next"
               />
+              {fieldErrors.waste ? <Text style={styles.errorText}>{fieldErrors.waste}</Text> : null}
 
               <Text style={styles.fieldLabel}>Notes (optional)</Text>
               <TextInput
@@ -273,14 +285,20 @@ export default function SubmitActivityScreen() {
 
               <Text style={styles.fieldLabel}>Organization</Text>
               <TouchableOpacity
-                style={styles.selectInput}
-                onPress={() => !orgLoading && setOrgMenuOpen(true)}
+                style={[styles.selectInput, fieldErrors.organization && styles.inputError]}
+                onPress={() => {
+                  if (!orgLoading) {
+                    setOrgMenuOpen(true);
+                    if (fieldErrors.organization) setFieldErrors((e) => ({ ...e, organization: undefined }));
+                  }
+                }}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.selectText, !form.organization && styles.selectPlaceholder]}>
                   {form.organization || (orgLoading ? 'Loading organizations...' : 'Select an organization')}
                 </Text>
               </TouchableOpacity>
+              {fieldErrors.organization ? <Text style={styles.errorText}>{fieldErrors.organization}</Text> : null}
 
               <Text style={styles.fieldLabel}>Category</Text>
               <TouchableOpacity style={styles.selectInput} onPress={() => setCategoryMenuOpen(true)} activeOpacity={0.8}>
@@ -444,6 +462,12 @@ const getStyles = (theme) => StyleSheet.create({
     fontWeight: '700',
     marginLeft: 6
   },
+  locationButtonDisabled: {
+    opacity: 0.5
+  },
+  locationButtonTextDisabled: {
+    color: theme.colors.textMuted
+  },
   locationInfoCard: {
     backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
@@ -457,6 +481,13 @@ const getStyles = (theme) => StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
     marginBottom: 4
+  },
+  locationInfoName: {
+    color: theme.colors.textMain,
+    fontWeight: '700',
+    fontSize: 13,
+    marginBottom: 4,
+    lineHeight: 18
   },
   locationInfoText: {
     color: theme.colors.textMuted,
@@ -540,5 +571,17 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.colors.primary,
     marginBottom: 14,
     fontWeight: '600'
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 10,
+    marginLeft: 4,
+    fontWeight: '600'
+  },
+  inputError: {
+    borderColor: '#ef4444',
+    borderWidth: 1.5
   }
 });

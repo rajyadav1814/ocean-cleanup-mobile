@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -47,6 +48,8 @@ export default function SignupScreen() {
   const [error, setError] = useState('');
   const [step, setStep] = useState(0);
   const [isRestoring, setIsRestoring] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const loadSavedState = async () => {
@@ -186,8 +189,18 @@ export default function SignupScreen() {
             <View>
               <TextInput placeholder="Email" placeholderTextColor={theme.colors.textMuted} keyboardType="email-address" autoCapitalize="none" style={styles.input} value={form.email} onChangeText={(value) => setField('email', value)} />
               <TextInput placeholder="Username" placeholderTextColor={theme.colors.textMuted} autoCapitalize="none" style={styles.input} value={form.username} onChangeText={(value) => setField('username', value)} />
-              <TextInput placeholder="Password" placeholderTextColor={theme.colors.textMuted} secureTextEntry style={styles.input} value={form.password} onChangeText={(value) => setField('password', value)} />
-              <TextInput placeholder="Confirm password" placeholderTextColor={theme.colors.textMuted} secureTextEntry style={styles.input} value={form.confirmPassword} onChangeText={(value) => setField('confirmPassword', value)} />
+              <View style={styles.passwordWrap}>
+                <TextInput placeholder="Password" placeholderTextColor={theme.colors.textMuted} secureTextEntry={!showPassword} style={[styles.input, styles.passwordInput]} value={form.password} onChangeText={(value) => setField('password', value)} />
+                <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPassword(v => !v)}>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.passwordWrap}>
+                <TextInput placeholder="Confirm password" placeholderTextColor={theme.colors.textMuted} secureTextEntry={!showConfirmPassword} style={[styles.input, styles.passwordInput]} value={form.confirmPassword} onChangeText={(value) => setField('confirmPassword', value)} />
+                <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowConfirmPassword(v => !v)}>
+                  <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              </View>
             </View>
           ) : null}
 
@@ -286,6 +299,22 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.colors.textMain,
     paddingHorizontal: 16,
     marginBottom: 12
+  },
+  passwordWrap: {
+    position: 'relative',
+    marginBottom: 12
+  },
+  passwordInput: {
+    marginBottom: 0,
+    paddingRight: 52
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 14,
+    top: 0,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   halfInput: {
     flex: 1

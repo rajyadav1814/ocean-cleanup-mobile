@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import ScreenContainer from '../components/ScreenContainer';
@@ -25,7 +26,6 @@ export default function HomeScreen() {
               <Text style={styles.avatarText}>{user?.displayInitial || 'U'}</Text>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.title}>My Profile</Text>
               <Text style={styles.name}>{user?.displayName || 'Citizen'}</Text>
               <Text style={styles.role}>{user?.role || 'Community Member'}</Text>
             </View>
@@ -38,7 +38,10 @@ export default function HomeScreen() {
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Account</Text>
-              <Text style={styles.infoValue}>Verified</Text>
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="shield-checkmark" size={14} color="#fff" style={{ marginRight: 4 }} />
+                <Text style={styles.verifiedBadgeText}>Verified</Text>
+              </View>
             </View>
           </View>
         </GlassCard>
@@ -52,12 +55,24 @@ export default function HomeScreen() {
               style={[styles.toggleButton, mode === 'light' && styles.toggleButtonActive]}
               onPress={() => setMode('light')}
             >
+              <Ionicons
+                name="sunny"
+                size={18}
+                color={mode === 'light' ? '#ffffff' : theme.colors.textMuted}
+                style={{ marginBottom: 4 }}
+              />
               <Text style={[styles.toggleText, mode === 'light' && styles.toggleTextActive]}>Light</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleButton, mode === 'dark' && styles.toggleButtonActive]}
               onPress={() => setMode('dark')}
             >
+              <Ionicons
+                name="moon"
+                size={18}
+                color={mode === 'dark' ? '#ffffff' : theme.colors.textMuted}
+                style={{ marginBottom: 4 }}
+              />
               <Text style={[styles.toggleText, mode === 'dark' && styles.toggleTextActive]}>Dark</Text>
             </TouchableOpacity>
           </View>
@@ -186,12 +201,13 @@ const getStyles = (theme) => StyleSheet.create({
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: theme.colors.border,
     alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 8
   },
   toggleButtonActive: {
@@ -200,10 +216,24 @@ const getStyles = (theme) => StyleSheet.create({
   },
   toggleText: {
     color: theme.colors.textMuted,
-    fontWeight: '700'
+    fontWeight: '700',
+    fontSize: 13
   },
   toggleTextActive: {
     color: '#ffffff'
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0d9488',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4
+  },
+  verifiedBadgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700'
   },
   actionButton: {
     backgroundColor: theme.colors.danger,

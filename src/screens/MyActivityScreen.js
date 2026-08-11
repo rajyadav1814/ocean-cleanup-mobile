@@ -81,7 +81,7 @@ function ActivityCard({ item, styles, onImagePress }) {
             <Text style={styles.placeholderIcon}>🖼️</Text>
           </View>
         )}
-        <View style={styles.statusBadge}>
+        <View style={[styles.statusBadge, item.status !== 'approved' && styles.statusBadgePending]}>
           <Text style={styles.statusBadgeText}>{item.status === 'approved' ? 'Approved' : 'Pending'}</Text>
         </View>
         {photoCount > 1 ? (
@@ -288,6 +288,9 @@ const getStyles = (theme) => StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6
+  },
+  statusBadgePending: {
+    backgroundColor: 'rgba(234, 88, 12, 0.95)'
   },
   statusBadgeText: {
     color: '#fff',
