@@ -1,10 +1,11 @@
-import React from 'react';
-import { ActivityIndicator, FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { memo, useCallback, useMemo } from 'react';
+import { FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useCitizenActivities } from '../services/citizenHooks';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
+import MyActivitySkeleton from '../components/MyActivitySkeleton';
 
 function normalizeImageUrl(value) {
   if (typeof value !== 'string') return null;
@@ -60,7 +61,7 @@ function getImageUrls(item) {
   return [];
 }
 
-function ActivityCard({ item, styles, onImagePress }) {
+const ActivityCard = memo(function ActivityCard({ item, styles, onImagePress }) {
   const activityDate = item.timestamp ? new Date(item.timestamp) : null;
   const imageUrls = getImageUrls(item);
   const imageUri = imageUrls[0] || null;
@@ -109,38 +110,38 @@ function ActivityCard({ item, styles, onImagePress }) {
       </View>
     </GlassCard>
   );
-}
+});
 
 export default function MyActivityScreen() {
   const isFocused = useIsFocused();
   const { theme } = useTheme();
-  const styles = getStyles(theme);
+  const styles = useMemo(() => getStyles(theme), [theme]);
   const { activities, loading } = useCitizenActivities(isFocused ? 1 : 0);
   const [selectedImage, setSelectedImage] = React.useState(null);
 
-  const closeImagePreview = () => setSelectedImage(null);
-  const handleImagePress = (item) => {
+  const closeImagePreview = useCallback(() => setSelectedImage(null), []);
+  const handleImagePress = useCallback((item) => {
     const images = getImageUrls(item);
     if (images.length > 0) {
       setSelectedImage({ images, index: 0 });
     }
-  };
+  }, []);
 
-  const goToPreviousImage = () => {
+  const goToPreviousImage = useCallback(() => {
     setSelectedImage((current) =>
       current && current.index > 0
         ? { ...current, index: current.index - 1 }
         : current
     );
-  };
+  }, []);
 
-  const goToNextImage = () => {
+  const goToNextImage = useCallback(() => {
     setSelectedImage((current) =>
       current && current.index < current.images.length - 1
         ? { ...current, index: current.index + 1 }
         : current
     );
-  };
+  }, []);
 
   return (
     <ScreenContainer style={styles.container}>
@@ -148,9 +149,7 @@ export default function MyActivityScreen() {
       <Text style={styles.subtitle}>A record of your environmental impact contributions.</Text>
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
+        <MyActivitySkeleton />
       ) : activities.length === 0 ? (
         <GlassCard>
           <Text style={styles.emptyText}>No activities found yet. Submit your first cleanup report to get started.</Text>

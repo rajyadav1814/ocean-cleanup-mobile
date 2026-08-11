@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
-export default function BrandButton({ title, onPress, variant = 'primary', disabled, style }) {
+const BrandButton = memo(function BrandButton({ title, onPress, variant = 'primary', disabled, style }) {
   const { theme } = useTheme();
   const backgroundColor = variant === 'secondary' ? 'transparent' : theme.colors.primary;
   const borderColor = variant === 'secondary' ? theme.colors.primary : 'transparent';
@@ -18,7 +18,9 @@ export default function BrandButton({ title, onPress, variant = 'primary', disab
       <Text style={[styles.text, { color }]}>{title}</Text>
     </TouchableOpacity>
   );
-}
+});
+
+export default BrandButton;
 
 const styles = StyleSheet.create({
   button: {
