@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useFonts, Outfit_400Regular, Outfit_500Medium, Outfit_700Bold } from '@expo-google-fonts/outfit';
 import { Ionicons } from '@expo/vector-icons';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { themes } from './src/theme';
@@ -13,7 +14,6 @@ import HomeScreen from './src/screens/HomeScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import SubmitActivityScreen from './src/screens/SubmitActivityScreen';
 import MyActivityScreen from './src/screens/MyActivityScreen';
-import LoadingScreen from './src/screens/LoadingScreen';
 import SplashScreen from './src/screens/SplashScreen';
 
 const Stack = createNativeStackNavigator();
@@ -95,8 +95,6 @@ function RootNavigator() {
     </NavigationContainer>
   );
 }
-
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function App() {
   return (

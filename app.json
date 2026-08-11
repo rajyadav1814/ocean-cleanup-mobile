@@ -10,7 +10,7 @@
     "extra": {
       "API_BASE_URL": "https://ocean-cleanup-cardano.vercel.app",
       "eas": {
-        "projectId": "784c446d-6d40-419f-a68a-dc4e78cffdba"
+        "projectId": "45da1507-aa9d-4056-b3e0-e68660379782"
       }
     },
     "assetBundlePatterns": [
@@ -28,6 +28,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png"
       }
-    }
+    },
+    "owner": "keyur-cloudpeaks-team"
   }
 }

@@ -295,24 +295,6 @@ const getStyles = (theme) => StyleSheet.create({
     gap: 12,
     marginBottom: 12
   },
-  infoBox: {
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 14,
-    marginBottom: 14
-  },
-  infoTitle: {
-    color: theme.colors.textMain,
-    fontWeight: '700',
-    marginBottom: 4
-  },
-  infoText: {
-    color: theme.colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18
-  },
   actionsRow: {
     flexDirection: 'row',
     marginTop: 10,

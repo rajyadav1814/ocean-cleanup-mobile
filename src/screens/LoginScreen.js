@@ -124,22 +124,6 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '700'
   },
-  pageTitle: {
-    color: theme.colors.primary,
-    fontSize: 32,
-    fontWeight: '800',
-    textAlign: 'center'
-  },
-  pageSubtitle: {
-    color: theme.colors.textMuted,
-    fontSize: 15,
-    textAlign: 'center',
-    marginTop: 6
-  },
-  headerContainer: {
-    paddingHorizontal: 18,
-    marginBottom: 24
-  },
   error: {
     color: theme.colors.danger,
     marginBottom: 12,

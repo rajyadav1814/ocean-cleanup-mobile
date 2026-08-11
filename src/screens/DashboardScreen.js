@@ -188,11 +188,6 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 14,
     lineHeight: 20
   },
-  heroRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
   tierBadge: {
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -220,21 +215,6 @@ const getStyles = (theme) => StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 18
-  },
-  avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  avatarText: {
-    color: theme.colors.textMain,
-    fontSize: 18,
-    fontWeight: '700'
   },
   heroBadgeRow: {
     flexDirection: 'row',
@@ -292,32 +272,6 @@ const getStyles = (theme) => StyleSheet.create({
   },
   leaderboardCard: {
     width: '100%'
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 12,
-    marginRight: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  tabButtonActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: 'transparent'
-  },
-  tabButtonText: {
-    color: theme.colors.textMuted,
-    fontWeight: '700'
-  },
-  tabButtonTextActive: {
-    color: theme.colors.background
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    marginBottom: 16
   },
   badgeGrid: {
     flexDirection: 'row',
@@ -465,15 +419,6 @@ const getStyles = (theme) => StyleSheet.create({
     fontWeight: '700'
   },
 
-  feedDesc: {
-    color: theme.colors.textMuted,
-    fontSize: 13,
-    marginTop: 3
-  },
-  feedTime: {
-    color: theme.colors.textMuted,
-    fontSize: 11
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
