@@ -26,8 +26,10 @@ import GlassCard from '../components/GlassCard';
 import BrandButton from '../components/BrandButton';
 import SelectDropdown from '../components/SelectDropdown';
 
-// Static data — defined outside the component so they are never re-created
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const CATEGORIES = ['Plastic', 'Glass', 'Metal', 'Mixed'];
+const MAX_PHOTOS = 5;
 
 const INITIAL_FORM = {
   location: '',
@@ -40,16 +42,66 @@ const INITIAL_FORM = {
   category: 'Plastic'
 };
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Shorten a filename to at most maxLen chars */
+function truncateFileName(uri, maxLen = 22) {
+  if (!uri) return '';
+  const name = uri.split('/').pop() || uri;
+  return name.length > maxLen ? name.slice(0, maxLen - 1) + '…' : name;
+}
+
+// ─── Sub-component ────────────────────────────────────────────────────────────
+
+function PhotoGrid({ photos, onRemove, styles, theme }) {
+  if (photos.length === 0) return null;
+
+  return (
+    <View style={styles.photoSection}>
+      {/* Count badge */}
+      <Text style={styles.photoCountLabel}>
+        {photos.length} {photos.length === 1 ? 'photo' : 'photos'} added
+      </Text>
+
+      <View style={styles.photoGrid}>
+        {photos.map((photo, index) => (
+          <View key={`${photo.uri}-${index}`} style={styles.photoTile}>
+            <Image source={{ uri: photo.uri }} style={styles.photoTileImage} resizeMode="cover" />
+
+            {/* Filename overlay at bottom */}
+            <View style={styles.photoTileLabel}>
+              <Text style={styles.photoTileLabelText} numberOfLines={1}>
+                {truncateFileName(photo.uri)}
+              </Text>
+            </View>
+
+            {/* Remove button */}
+            <TouchableOpacity
+              style={styles.photoRemoveButton}
+              onPress={() => onRemove(index)}
+              activeOpacity={0.8}
+              hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+            >
+              <Ionicons name="close" size={13} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function SubmitActivityScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
   const isFocused = useIsFocused();
 
-  // Memoize styles so they are only re-created when the theme changes
   const styles = useMemo(() => getStyles(theme), [theme]);
 
   const [form, setForm] = useState(INITIAL_FORM);
-  const [photo, setPhoto] = useState(null);
+  const [photos, setPhotos] = useState([]);   // Array of image assets
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationDeniedPermanently, setLocationDeniedPermanently] = useState(false);
@@ -58,7 +110,6 @@ export default function SubmitActivityScreen() {
 
   const { organizations, loading: orgLoading } = useCitizenOrganizations();
 
-  // Re-fetch location only when the tab re-focuses AND we don't have one yet
   useEffect(() => {
     if (isFocused && !form.latitude) {
       getCurrentLocation();
@@ -119,9 +170,23 @@ export default function SubmitActivityScreen() {
     }
   }, [locationDeniedPermanently, getCurrentLocation]);
 
-  // ─── Photo ────────────────────────────────────────────────────────────────
+  // ─── Photos ───────────────────────────────────────────────────────────────
+
+  /** Add new assets to the list, never exceeding MAX_PHOTOS */
+  const addPhotos = useCallback((newAssets) => {
+    setPhotos((prev) => {
+      const available = MAX_PHOTOS - prev.length;
+      if (available <= 0) return prev;
+      const toAdd = newAssets.slice(0, available);
+      return [...prev, ...toAdd];
+    });
+  }, []);
 
   const handleTakePhoto = useCallback(async () => {
+    if (photos.length >= MAX_PHOTOS) {
+      setMessage(`Maximum ${MAX_PHOTOS} photos allowed.`);
+      return;
+    }
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (permission.status !== 'granted') {
       setMessage('Camera permission is required.');
@@ -134,27 +199,37 @@ export default function SubmitActivityScreen() {
       base64: true
     });
     if (!result.canceled && result.assets.length > 0) {
-      setPhoto(result.assets[0]);
-      setMessage('Photo added.');
+      addPhotos(result.assets);
+      setMessage('');
     }
-  }, []);
+  }, [photos.length, addPhotos]);
 
   const handlePickImage = useCallback(async () => {
+    if (photos.length >= MAX_PHOTOS) {
+      setMessage(`Maximum ${MAX_PHOTOS} photos allowed.`);
+      return;
+    }
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== 'granted') {
       setMessage('Gallery permission is required.');
       return;
     }
+    const remaining = MAX_PHOTOS - photos.length;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
-      allowsEditing: true,
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
       base64: true
     });
     if (!result.canceled && result.assets.length > 0) {
-      setPhoto(result.assets[0]);
-      setMessage('Image selected.');
+      addPhotos(result.assets);
+      setMessage('');
     }
+  }, [photos.length, addPhotos]);
+
+  const handleRemovePhoto = useCallback((index) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   // ─── Form helpers ─────────────────────────────────────────────────────────
@@ -196,6 +271,11 @@ export default function SubmitActivityScreen() {
     setMessage('');
 
     try {
+      // Serialize all base64 images
+      const imageDataUrls = photos
+        .filter((p) => p.base64)
+        .map((p) => `data:image/jpeg;base64,${p.base64}`);
+
       const payload = {
         organizationId: form.organization,
         contributorId: user?.id || user?.userId || 'unknown',
@@ -209,9 +289,7 @@ export default function SubmitActivityScreen() {
         lon: Number(form.longitude),
         gps: `${form.latitude}, ${form.longitude}`,
         timestamp: new Date().toISOString(),
-        imageUrls: photo?.base64
-          ? JSON.stringify([`data:image/jpeg;base64,${photo.base64}`])
-          : '[]'
+        imageUrls: imageDataUrls.length > 0 ? JSON.stringify(imageDataUrls) : '[]'
       };
 
       const data = await citizenApi.submitReport(payload);
@@ -219,7 +297,7 @@ export default function SubmitActivityScreen() {
       if (data.ok) {
         setMessage('Report submitted successfully.');
         setForm(INITIAL_FORM);
-        setPhoto(null);
+        setPhotos([]);
       } else {
         setMessage(data.message || 'Unable to submit report.');
       }
@@ -229,7 +307,7 @@ export default function SubmitActivityScreen() {
     } finally {
       setLoading(false);
     }
-  }, [form, photo, user]);
+  }, [form, photos, user]);
 
   // ─── Derived values ───────────────────────────────────────────────────────
 
@@ -255,11 +333,12 @@ export default function SubmitActivityScreen() {
     ? 'Location detected'
     : 'Use current location';
 
-  // Build org options list from fetched data
   const orgOptions = useMemo(
     () => organizations.map((o) => o.name || o),
     [organizations]
   );
+
+  const photoLimitReached = photos.length >= MAX_PHOTOS;
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -279,26 +358,50 @@ export default function SubmitActivityScreen() {
             <GlassCard style={styles.card}>
               <Text style={styles.title}>Log a cleanup</Text>
 
-              {/* Photo buttons */}
+              {/* ── Photo capture buttons ─────────────────────────────── */}
               <View style={styles.imageButtonsRow}>
-                <TouchableOpacity style={styles.imageButton} activeOpacity={0.8} onPress={handleTakePhoto}>
-                  <Ionicons name="camera-outline" size={24} color={theme.colors.primary} />
-                  <Text style={styles.imageButtonText}>Open Camera</Text>
+                <TouchableOpacity
+                  style={[styles.imageButton, photoLimitReached && styles.imageButtonDisabled]}
+                  activeOpacity={0.8}
+                  onPress={handleTakePhoto}
+                  disabled={photoLimitReached}
+                >
+                  <Ionicons
+                    name="camera-outline"
+                    size={24}
+                    color={photoLimitReached ? theme.colors.textMuted : theme.colors.primary}
+                  />
+                  <Text style={[styles.imageButtonText, photoLimitReached && styles.imageButtonTextDisabled]}>
+                    Open Camera
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.imageButton} activeOpacity={0.8} onPress={handlePickImage}>
-                  <Ionicons name="images-outline" size={24} color={theme.colors.primary} />
-                  <Text style={styles.imageButtonText}>Gallery Upload</Text>
+
+                <TouchableOpacity
+                  style={[styles.imageButton, photoLimitReached && styles.imageButtonDisabled]}
+                  activeOpacity={0.8}
+                  onPress={handlePickImage}
+                  disabled={photoLimitReached}
+                >
+                  <Ionicons
+                    name="images-outline"
+                    size={24}
+                    color={photoLimitReached ? theme.colors.textMuted : theme.colors.primary}
+                  />
+                  <Text style={[styles.imageButtonText, photoLimitReached && styles.imageButtonTextDisabled]}>
+                    Gallery Upload
+                  </Text>
                 </TouchableOpacity>
               </View>
 
-              {photo ? (
-                <View style={styles.photoPreview}>
-                  <Image source={{ uri: photo.uri }} style={styles.photoImage} />
-                  <Text style={styles.photoLabel}>Photo added</Text>
-                </View>
-              ) : null}
+              {/* ── Photo grid ───────────────────────────────────────── */}
+              <PhotoGrid
+                photos={photos}
+                onRemove={handleRemovePhoto}
+                styles={styles}
+                theme={theme}
+              />
 
-              {/* Location */}
+              {/* ── Location ─────────────────────────────────────────── */}
               <Text style={styles.fieldLabel}>Location</Text>
               {fieldErrors.location ? <Text style={styles.errorText}>{fieldErrors.location}</Text> : null}
 
@@ -334,7 +437,7 @@ export default function SubmitActivityScreen() {
                 </Text>
               </View>
 
-              {/* Numeric fields */}
+              {/* ── Numeric fields ───────────────────────────────────── */}
               <Text style={styles.fieldLabel}>Volunteers</Text>
               <TextInput
                 style={[styles.input, fieldErrors.volunteers && styles.inputError]}
@@ -371,7 +474,7 @@ export default function SubmitActivityScreen() {
                 textAlignVertical="top"
               />
 
-              {/* Dropdowns via reusable SelectDropdown */}
+              {/* ── Dropdowns ────────────────────────────────────────── */}
               <SelectDropdown
                 label="Organization"
                 value={form.organization}
@@ -404,6 +507,8 @@ export default function SubmitActivityScreen() {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const getStyles = (theme) =>
   StyleSheet.create({
     screen: {
@@ -411,26 +516,21 @@ const getStyles = (theme) =>
       paddingTop: 40,
       paddingBottom: 24
     },
-    keyboardView: {
-      flex: 1
-    },
-    contentContainer: {
-      flexGrow: 1,
-      paddingBottom: 12
-    },
-    card: {
-      padding: 20
-    },
+    keyboardView: { flex: 1 },
+    contentContainer: { flexGrow: 1, paddingBottom: 12 },
+    card: { padding: 20 },
     title: {
       color: theme.colors.textMain,
       fontSize: 22,
       fontWeight: '700',
       marginBottom: 20
     },
+
+    // ── Photo capture buttons ──────────────────────────────────────────────
     imageButtonsRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: 18
+      marginBottom: 14
     },
     imageButton: {
       flex: 1,
@@ -443,6 +543,9 @@ const getStyles = (theme) =>
       alignItems: 'center',
       justifyContent: 'center'
     },
+    imageButtonDisabled: {
+      opacity: 0.4
+    },
     imageButtonText: {
       color: theme.colors.textMain,
       fontWeight: '700',
@@ -450,6 +553,65 @@ const getStyles = (theme) =>
       fontSize: 13,
       textAlign: 'center'
     },
+    imageButtonTextDisabled: {
+      color: theme.colors.textMuted
+    },
+
+    // ── Photo grid ────────────────────────────────────────────────────────
+    photoSection: {
+      marginBottom: 18
+    },
+    photoCountLabel: {
+      color: theme.colors.primary,
+      fontWeight: '700',
+      fontSize: 13,
+      textAlign: 'center',
+      marginBottom: 12
+    },
+    photoGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10
+    },
+    photoTile: {
+      width: '47%',
+      aspectRatio: 1.45,
+      borderRadius: 16,
+      overflow: 'hidden',
+      position: 'relative',
+      backgroundColor: theme.colors.surfaceAlt
+    },
+    photoTileImage: {
+      width: '100%',
+      height: '100%'
+    },
+    photoTileLabel: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      paddingHorizontal: 8,
+      paddingVertical: 5
+    },
+    photoTileLabelText: {
+      color: '#fff',
+      fontSize: 10,
+      fontWeight: '500'
+    },
+    photoRemoveButton: {
+      position: 'absolute',
+      top: 7,
+      right: 7,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: 'rgba(0,0,0,0.65)',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+
+    // ── Form fields ───────────────────────────────────────────────────────
     fieldLabel: {
       color: theme.colors.textMain,
       marginBottom: 10,
@@ -466,13 +628,13 @@ const getStyles = (theme) =>
       marginBottom: 14,
       minHeight: 52
     },
-    textArea: {
-      minHeight: 96
-    },
+    textArea: { minHeight: 96 },
     inputError: {
       borderColor: '#ef4444',
       borderWidth: 1.5
     },
+
+    // ── Location ──────────────────────────────────────────────────────────
     locationButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -490,12 +652,8 @@ const getStyles = (theme) =>
       fontWeight: '700',
       marginLeft: 6
     },
-    locationButtonDisabled: {
-      opacity: 0.5
-    },
-    locationButtonTextDisabled: {
-      color: theme.colors.textMuted
-    },
+    locationButtonDisabled: { opacity: 0.5 },
+    locationButtonTextDisabled: { color: theme.colors.textMuted },
     locationInfoCard: {
       backgroundColor: theme.colors.surfaceAlt,
       borderRadius: 16,
@@ -522,21 +680,8 @@ const getStyles = (theme) =>
       fontSize: 12,
       lineHeight: 18
     },
-    photoPreview: {
-      marginTop: 16,
-      marginBottom: 16,
-      alignItems: 'center'
-    },
-    photoImage: {
-      width: '100%',
-      height: 180,
-      borderRadius: 18,
-      marginBottom: 10
-    },
-    photoLabel: {
-      color: theme.colors.textMuted,
-      fontSize: 13
-    },
+
+    // ── Feedback ──────────────────────────────────────────────────────────
     message: {
       color: theme.colors.primary,
       marginBottom: 14,
