@@ -16,9 +16,17 @@ export const themes = {
       danger: '#ef4444'
     },
     fonts: {
-      regular: 'Outfit_400Regular',
-      medium: 'Outfit_500Medium',
-      bold: 'Outfit_700Bold'
+      sans: 'DMSans_400Regular',
+      sansMedium: 'DMSans_500Medium',
+      sansBold: 'DMSans_700Bold',
+      display: 'Syne_600SemiBold',
+      displayBold: 'Syne_700Bold',
+      mono: 'DMMono_400Regular',
+      monoMedium: 'DMMono_500Medium',
+      // Maintain backwards compatibility if any component uses these directly
+      regular: 'DMSans_400Regular',
+      medium: 'DMSans_500Medium',
+      bold: 'DMSans_700Bold'
     },
     sizes: {
       radius: 18,
@@ -44,9 +52,16 @@ export const themes = {
       danger: '#b91c1c'
     },
     fonts: {
-      regular: 'Outfit_400Regular',
-      medium: 'Outfit_500Medium',
-      bold: 'Outfit_700Bold'
+      sans: 'DMSans_400Regular',
+      sansMedium: 'DMSans_500Medium',
+      sansBold: 'DMSans_700Bold',
+      display: 'Syne_600SemiBold',
+      displayBold: 'Syne_700Bold',
+      mono: 'DMMono_400Regular',
+      monoMedium: 'DMMono_500Medium',
+      regular: 'DMSans_400Regular',
+      medium: 'DMSans_500Medium',
+      bold: 'DMSans_700Bold'
     },
     sizes: {
       radius: 18,

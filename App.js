@@ -2,7 +2,9 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useFonts, Outfit_400Regular, Outfit_500Medium, Outfit_700Bold } from '@expo-google-fonts/outfit';
+import { useFonts, Syne_400Regular, Syne_500Medium, Syne_600SemiBold, Syne_700Bold } from '@expo-google-fonts/syne';
+import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
+import { DMMono_400Regular, DMMono_500Medium } from '@expo-google-fonts/dm-mono';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -38,7 +40,7 @@ function AuthTabs() {
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
-        tabBarLabelStyle: { fontFamily: theme.fonts.medium, fontSize: 12 },
+        tabBarLabelStyle: { fontFamily: theme.fonts.sansMedium, fontSize: 12 },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName = 'home';
           if (route.name === 'Dashboard') iconName = focused ? 'speedometer' : 'speedometer-outline';
@@ -60,7 +62,11 @@ function AuthTabs() {
 function RootNavigator() {
   const { loading, user } = useAuth();
   const { theme, mode } = useTheme();
-  const [fontsLoaded] = useFonts({ Outfit_400Regular, Outfit_500Medium, Outfit_700Bold });
+  const [fontsLoaded] = useFonts({
+    Syne_400Regular, Syne_500Medium, Syne_600SemiBold, Syne_700Bold,
+    DMSans_400Regular, DMSans_500Medium, DMSans_700Bold,
+    DMMono_400Regular, DMMono_500Medium
+  });
   const [showSplash, setShowSplash] = React.useState(true);
 
   React.useEffect(() => {
