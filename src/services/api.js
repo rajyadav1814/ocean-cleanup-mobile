@@ -95,6 +95,18 @@ export async function authLogout(token) {
   return handleResponse(res);
 }
 
+export async function authUpdateProfile(payload) {
+  const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {})
+    },
+    body: JSON.stringify(payload)
+  });
+  return handleResponse(res);
+}
+
 export const citizenApi = {
   getStats: () => apiGet('/api/citizen/stats'),
   getLeaderboard: () => apiGet('/api/citizen/leaderboard'),

@@ -54,10 +54,22 @@ function AuthTabs() {
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="MyActivity" component={MyActivityScreen} options={{ title: 'My Activity' }} />
       <Tab.Screen name="Submit" component={SubmitActivityScreen} />
-      <Tab.Screen name="Profile" component={HomeScreen} />
+      <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 }
+
+import ProfileSettingsScreen from './src/screens/ProfileSettingsScreen';
+
+function ProfileStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ProfileHome" component={HomeScreen} />
+      <Stack.Screen name="ProfileSettings" component={ProfileSettingsScreen} />
+    </Stack.Navigator>
+  );
+}
+
 
 function RootNavigator() {
   const { loading, user } = useAuth();

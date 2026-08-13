@@ -87,7 +87,13 @@ export function AuthProvider({ children }) {
     setRole(null);
   };
 
-  const value = useMemo(() => ({ user, role, login, logout, loading }), [user, role, loading]);
+  const updateUser = async (newUserData) => {
+    const normalizedUser = normalizeUser(newUserData);
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
+  };
+
+  const value = useMemo(() => ({ user, role, login, logout, updateUser, loading }), [user, role, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

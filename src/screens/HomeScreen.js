@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/GlassCard';
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const { user, logout } = useAuth();
   const { theme, mode, setMode } = useTheme();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
@@ -23,12 +23,19 @@ export default function HomeScreen() {
         <GlassCard style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{user?.displayInitial || 'U'}</Text>
+              {user?.profileImageUrl ? (
+                <Image source={{ uri: user.profileImageUrl }} style={{ width: '100%', height: '100%', borderRadius: 24 }} />
+              ) : (
+                <Text style={styles.avatarText}>{user?.displayInitial || 'U'}</Text>
+              )}
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.name}>{user?.displayName || 'Citizen'}</Text>
-              <Text style={styles.role}>{user?.role || 'Community Member'}</Text>
+              <Text style={styles.role}>{user?.jobTitle ? `${user.jobTitle}` : user?.role || 'Community Member'}</Text>
             </View>
+            <TouchableOpacity onPress={() => navigation.navigate('ProfileSettings')} style={{ padding: 8 }}>
+              <Ionicons name="pencil-outline" size={20} color={theme.colors.textMuted} />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.infoList}>
