@@ -209,7 +209,6 @@ const getStyles = (theme) =>
     heroCard: {
       paddingBottom: 22,
       marginBottom: 16,
-      marginTop: 25
     },
     heroTag: {
       color: theme.colors.secondary,

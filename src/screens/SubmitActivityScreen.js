@@ -513,7 +513,6 @@ const getStyles = (theme) =>
   StyleSheet.create({
     screen: {
       paddingHorizontal: 16,
-      paddingTop: 40,
       paddingBottom: 24
     },
     keyboardView: { flex: 1 },

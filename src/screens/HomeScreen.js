@@ -117,7 +117,6 @@ export default function HomeScreen({ navigation }) {
 
 const getStyles = (theme) => StyleSheet.create({
   scrollContent: {
-    paddingTop: 24,
     paddingBottom: 24
   },
   profileCard: {

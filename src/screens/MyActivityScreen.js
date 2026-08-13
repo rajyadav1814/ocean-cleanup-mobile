@@ -226,7 +226,6 @@ export default function MyActivityScreen() {
 const getStyles = (theme) => StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingTop: 44,
     paddingBottom: 32
   },
   title: {

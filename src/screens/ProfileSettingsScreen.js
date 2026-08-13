@@ -186,7 +186,7 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    // paddingVertical: 8,
   },
   backButton: {
     padding: 8,
@@ -201,6 +201,7 @@ const getStyles = (theme) => StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
+    marginTop: 8,
     padding: 20,
   },
   avatarSection: {
