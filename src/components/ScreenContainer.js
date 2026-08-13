@@ -18,6 +18,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 12
+    // padding: 12
+    paddingHorizontal: 12,
+    paddingTop: 4
   }
 });
