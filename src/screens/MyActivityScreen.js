@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -62,10 +62,10 @@ function getImageUrls(item) {
 }
 
 const ActivityCard = memo(function ActivityCard({ item, styles, onImagePress }) {
-  const activityDate = item.timestamp ? new Date(item.timestamp) : null;
-  const imageUrls = getImageUrls(item);
+  const activityDate = item && item.timestamp ? new Date(item.timestamp) : null;
+  const imageUrls = getImageUrls(item || {});
   const imageUri = imageUrls[0] || null;
-  const photoCount = imageUrls.length;
+  const photoCount = imageUrls.length || 0;
 
   return (
     <GlassCard style={styles.activityCard}>
@@ -82,30 +82,36 @@ const ActivityCard = memo(function ActivityCard({ item, styles, onImagePress }) 
             <Text style={styles.placeholderIcon}>🖼️</Text>
           </View>
         )}
-        <View style={[styles.statusBadge, item.status !== 'approved' && styles.statusBadgePending]}>
-          <Text style={styles.statusBadgeText}>{item.status === 'approved' ? 'Approved' : 'Pending'}</Text>
+
+        <View style={[styles.statusBadge, item && item.status !== 'approved' && styles.statusBadgePending]}>
+          <Text style={styles.statusBadgeText}>
+            {item && item.status === 'approved' ? '✔ VERIFIED' : item && (item.status === 'pending' || item.status === 'submitted') ? '⦿ PENDING' : item && item.status === 'rejected' ? '✖ REJECTED' : (item && item.status) || ''}
+          </Text>
         </View>
+
         {photoCount > 1 ? (
           <View style={styles.moreBadge}>
             <Text style={styles.moreBadgeText}>+{photoCount - 1} more</Text>
           </View>
         ) : null}
       </TouchableOpacity>
+
       <View style={styles.activityHeader}>
         <View style={styles.activityHeaderLeft}>
-          <Text style={styles.activityLocation}>{item.location || 'Unknown location'}</Text>
-          <Text style={styles.activitySubtext}>{item.city || item.address || ''}</Text>
+          <Text style={styles.activityLocation}>{item && (item.location || 'Unknown location')}</Text>
+          <Text style={styles.activitySubtext}>{item && (item.city || item.address || '')}</Text>
         </View>
         <Text style={styles.activityDate}>{activityDate ? activityDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}</Text>
       </View>
+
       <View style={styles.activityDetailsRow}>
         <View style={styles.detailBlock}>
           <Text style={styles.detailLabel}>Category</Text>
-          <Text style={styles.detailValue}>{item.category || 'Plastic'}</Text>
+          <Text style={styles.detailValue}>{item && (item.category || 'Plastic')}</Text>
         </View>
         <View style={styles.detailBlockRight}>
           <Text style={styles.detailLabel}>Quantity</Text>
-          <Text style={styles.quantityValue}>{typeof item.quantity === 'number' ? `${item.quantity.toFixed(2)} kg` : item.quantity || '0.00 kg'}</Text>
+          <Text style={styles.quantityValue}>{item && typeof item.quantity === 'number' ? `${item.quantity.toFixed(2)} kg` : item && (item.quantity || '0.00 kg')}</Text>
         </View>
       </View>
     </GlassCard>
@@ -117,6 +123,25 @@ export default function MyActivityScreen() {
   const { theme } = useTheme();
   const styles = useMemo(() => getStyles(theme), [theme]);
   const { activities, loading } = useCitizenActivities(isFocused ? 1 : 0);
+  const [selectedTab, setSelectedTab] = useState('all');
+
+  const counts = useMemo(() => {
+    const list = Array.isArray(activities) ? activities : [];
+    const total = list.length;
+    const approved = list.filter(a => a.status === 'approved').length;
+    const pending = list.filter(a => a.status === 'pending' || a.status === 'submitted').length;
+    const rejected = list.filter(a => a.status === 'rejected').length;
+    return { total, approved, pending, rejected };
+  }, [activities]);
+
+  const filteredActivities = useMemo(() => {
+    const list = Array.isArray(activities) ? activities : [];
+    if (selectedTab === 'all') return list;
+    if (selectedTab === 'approved') return list.filter(a => a.status === 'approved');
+    if (selectedTab === 'pending') return list.filter(a => a.status === 'pending' || a.status === 'submitted');
+    if (selectedTab === 'rejected') return list.filter(a => a.status === 'rejected');
+    return list;
+  }, [activities, selectedTab]);
   const [selectedImage, setSelectedImage] = React.useState(null);
 
   const closeImagePreview = useCallback(() => setSelectedImage(null), []);
@@ -155,13 +180,32 @@ export default function MyActivityScreen() {
           <Text style={styles.emptyText}>No activities found yet. Submit your first cleanup report to get started.</Text>
         </GlassCard>
       ) : (
-        <FlatList
-          data={activities}
+        <>
+          <View style={styles.tabContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
+              <TouchableOpacity style={[styles.tabPill, selectedTab === 'all' && styles.tabPillActive]} onPress={() => setSelectedTab('all')}>
+                <Text style={[styles.tabPillText, selectedTab === 'all' && styles.tabPillTextActive]}>All ({counts.total})</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.tabPill, selectedTab === 'approved' && styles.tabPillActive]} onPress={() => setSelectedTab('approved')}>
+                <Text style={[styles.tabPillText, selectedTab === 'approved' && styles.tabPillTextActive]}>Verified ({counts.approved})</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.tabPill, selectedTab === 'pending' && styles.tabPillActive]} onPress={() => setSelectedTab('pending')}>
+                <Text style={[styles.tabPillText, selectedTab === 'pending' && styles.tabPillTextActive]}>Pending ({counts.pending})</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.tabPill, selectedTab === 'rejected' && styles.tabPillActive]} onPress={() => setSelectedTab('rejected')}>
+                <Text style={[styles.tabPillText, selectedTab === 'rejected' && styles.tabPillTextActive]}>Rejected ({counts.rejected})</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+
+          <FlatList
+            data={filteredActivities}
           keyExtractor={(item) => item.id?.toString() || item._id || String(item.activityId) || String(Math.random())}
           renderItem={({ item }) => <ActivityCard item={item} styles={styles} onImagePress={handleImagePress} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
+        </>
       )}
 
       <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={closeImagePreview}>
@@ -252,43 +296,81 @@ const getStyles = (theme) => StyleSheet.create({
   listContent: {
     paddingBottom: 16
   },
+  tabBar: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    marginBottom: 6,
+    alignItems: 'center'
+  },
+  tabContainer: {
+    borderRadius: 14,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    marginBottom: 10,
+    overflow: 'hidden'
+  },
+  tabPill: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'transparent'
+  },
+  tabPillActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary
+  },
+  tabPillText: {
+    color: theme.colors.textMuted,
+    fontWeight: '700'
+  },
+  tabPillTextActive: {
+    color: theme.colors.textMain
+  },
   activityCard: {
-    padding: 0,
+      padding: 16,
     overflow: 'hidden'
   },
   activityImageWrapper: {
     width: '100%',
-    height: 160,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    height: 120,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: theme.colors.surfaceAlt
+    backgroundColor: theme.colors.surfaceAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 14
   },
   activityImage: {
     width: '100%',
     height: '100%'
   },
   placeholderImage: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center'
   },
   placeholderIcon: {
-    fontSize: 36,
+    fontSize: 44,
     color: theme.colors.textMuted
   },
   statusBadge: {
     position: 'absolute',
     top: 12,
-    left: 12,
+    right: 12,
     backgroundColor: 'rgba(0, 128, 80, 0.95)',
-    borderRadius: 999,
+    borderRadius: 18,
     paddingHorizontal: 12,
     paddingVertical: 6
   },
   statusBadgePending: {
-    backgroundColor: 'rgba(234, 88, 12, 0.95)'
+    backgroundColor: 'rgba(234, 150, 25, 0.95)'
   },
   statusBadgeText: {
     color: '#fff',
