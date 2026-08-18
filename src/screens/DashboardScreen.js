@@ -67,7 +67,7 @@ const FeedItem = memo(function FeedItem({ item, styles }) {
       <View
         style={[
           styles.statusBadge,
-          item.status === 'approved' ? styles.statusBadgeApproved : styles.statusBadgePending
+          item.status === 'approved' ? styles.statusBadgeApproved : item.status === 'rejected' ? styles.statusBadgeRejected : styles.statusBadgePending
         ]}
       >
         <Text style={styles.statusBadgeText}>{statusLabel}</Text>
@@ -454,6 +454,9 @@ const getStyles = (theme) =>
     },
     statusBadgePending: {
       backgroundColor: 'rgba(251, 191, 36, 0.15)'
+    },
+    statusBadgeRejected: {
+      backgroundColor: 'rgba(204, 40, 40, 0.12)'
     },
     statusBadgeText: {
       color: theme.colors.textMain,

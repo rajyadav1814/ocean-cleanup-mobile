@@ -83,7 +83,10 @@ const ActivityCard = memo(function ActivityCard({ item, styles, onImagePress }) 
           </View>
         )}
 
-        <View style={[styles.statusBadge, item && item.status !== 'approved' && styles.statusBadgePending]}>
+        <View style={[
+          styles.statusBadge,
+          item && item.status === 'rejected' ? styles.statusBadgeRejected : item && item.status !== 'approved' && styles.statusBadgePending
+        ]}>
           <Text style={styles.statusBadgeText}>
             {item && item.status === 'approved' ? '✔ VERIFIED' : item && (item.status === 'pending' || item.status === 'submitted') ? '⦿ PENDING' : item && item.status === 'rejected' ? '✖ REJECTED' : (item && item.status) || ''}
           </Text>
@@ -371,6 +374,9 @@ const getStyles = (theme) => StyleSheet.create({
   },
   statusBadgePending: {
     backgroundColor: 'rgba(234, 150, 25, 0.95)'
+  },
+  statusBadgeRejected: {
+    backgroundColor: 'rgba(204, 40, 40, 0.95)'
   },
   statusBadgeText: {
     color: '#fff',
