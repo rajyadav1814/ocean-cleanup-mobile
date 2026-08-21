@@ -18,7 +18,17 @@ import {
   DMMono_400Regular,
   DMMono_500Medium
 } from '@expo-google-fonts/dm-mono';
+import {
+  InstrumentSans_400Regular,
+  InstrumentSans_500Medium,
+  InstrumentSans_600SemiBold
+} from '@expo-google-fonts/instrument-sans';
+import {
+  InstrumentSerif_400Regular,
+  InstrumentSerif_400Regular_Italic
+} from '@expo-google-fonts/instrument-serif';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -156,6 +166,13 @@ function RootNavigator() {
 
     DMMono_400Regular,
     DMMono_500Medium,
+
+    InstrumentSans_400Regular,
+    InstrumentSans_500Medium,
+    InstrumentSans_600SemiBold,
+
+    InstrumentSerif_400Regular,
+    InstrumentSerif_400Regular_Italic,
   });
 
   const [showSplash, setShowSplash] = React.useState(true);
@@ -216,7 +233,7 @@ export default function App() {
               style={{ flex: 1 }}
               edges={['top']}
             >
-              <RootNavigator />
+            <RootNavigator />
             </SafeAreaView>
           </AuthProvider>
         </ThemeProvider>

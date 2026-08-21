@@ -1,36 +1,48 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../context/ThemeContext';
 import { authSignup } from '../services/api';
-import ScreenContainer from '../components/ScreenContainer';
-import GlassCard from '../components/GlassCard';
-import BrandButton from '../components/BrandButton';
+import { AUTH_COLORS, AUTH_GRADIENT, AUTH_BTN_GRADIENT, AUTH_FONTS } from '../styles/authTheme';
+import AuthBackdrop from '../components/AuthBackdrop';
+import BluemindMark from '../components/BluemindMark';
+
+const SIGNALS = [
+  { left: 8, top: 15, delay: 0 },
+  { left: 88, top: 70, delay: 2100 },
+  { left: 82, top: 18, delay: 3800 },
+];
 
 const steps = [
   {
     key: 'account',
-    title: 'Account basics',
+    label: 'Account basics',
+    titlePrefix: 'Account ',
+    titleAccent: 'basics.',
     subtitle: 'Create your sign-in details first.'
   },
   {
     key: 'profile',
-    title: 'Profile details',
+    label: 'Profile details',
+    titlePrefix: 'Profile ',
+    titleAccent: 'details.',
     subtitle: 'Tell us a bit about who you are.'
   },
   {
     key: 'preferences',
-    title: 'Preferences',
+    label: 'Preferences',
+    titlePrefix: '',
+    titleAccent: 'Preferences.',
     subtitle: 'Add details to complete your profile.'
   }
 ];
 
 export default function SignupScreen() {
   const navigation = useNavigation();
-  const { theme } = useTheme();
-  const styles = getStyles(theme);
+  const insets = useSafeAreaInsets();
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -42,7 +54,6 @@ export default function SignupScreen() {
     organizationId: '',
     jobTitle: '',
     experience: '',
-    walletAddress: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,6 +61,7 @@ export default function SignupScreen() {
   const [isRestoring, setIsRestoring] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [focused, setFocused] = useState('');
 
   useEffect(() => {
     const loadSavedState = async () => {
@@ -83,7 +95,6 @@ export default function SignupScreen() {
   const setField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const currentStep = steps[step];
-  const progressPercent = useMemo(() => ((step + 1) / steps.length) * 100, [step]);
 
   const validateStep = () => {
     if (step === 0) {
@@ -137,7 +148,6 @@ export default function SignupScreen() {
         role: 'citizen',
         jobTitle: form.jobTitle || undefined,
         experience: form.experience || undefined,
-        walletAddress: form.walletAddress || undefined,
         organizationId: form.organizationId || undefined
       };
 
@@ -156,215 +166,403 @@ export default function SignupScreen() {
       setLoading(false);
     }
   };
+
   if (isRestoring) {
     return (
-      <ScreenContainer>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+      <LinearGradient colors={AUTH_GRADIENT} style={styles.screen}>
+        <View style={styles.restoringWrap}>
+          <ActivityIndicator size="large" color={AUTH_COLORS.tealLight} />
         </View>
-      </ScreenContainer>
+      </LinearGradient>
     );
   }
 
+  const fieldStyle = (name, hasError) => [
+    styles.field,
+    focused === name && styles.fieldFocused,
+    hasError && styles.fieldError,
+  ];
+
   return (
-    <ScreenContainer>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <GlassCard style={styles.card}>
-          <View style={styles.progressWrap}>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+    <LinearGradient colors={AUTH_GRADIENT} start={{ x: 0.85, y: 0 }} end={{ x: 0.15, y: 1 }} style={styles.screen}>
+      <AuthBackdrop signals={SIGNALS} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.card}>
+            <View style={styles.logoRow}>
+              <BluemindMark size={20} color={AUTH_COLORS.onDark} />
+              <Text style={styles.logoText}>Bluemind</Text>
             </View>
-            <Text style={styles.stepText}>{step + 1} of {steps.length}</Text>
-          </View>
 
-          <Text style={styles.title}>{currentStep.title}</Text>
-          <Text style={styles.subtitle}>{currentStep.subtitle}</Text>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          {step === 0 ? (
-            <View>
-              <TextInput placeholder="Email" placeholderTextColor={theme.colors.textMuted} keyboardType="email-address" autoCapitalize="none" style={styles.input} value={form.email} onChangeText={(value) => setField('email', value)} />
-              <TextInput placeholder="Username" placeholderTextColor={theme.colors.textMuted} autoCapitalize="none" style={styles.input} value={form.username} onChangeText={(value) => setField('username', value)} />
-              <View style={styles.passwordWrap}>
-                <TextInput placeholder="Password" placeholderTextColor={theme.colors.textMuted} secureTextEntry={!showPassword} style={[styles.input, styles.passwordInput]} value={form.password} onChangeText={(value) => setField('password', value)} />
-                <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPassword(v => !v)}>
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color={theme.colors.textMuted} />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.passwordWrap}>
-                <TextInput placeholder="Confirm password" placeholderTextColor={theme.colors.textMuted} secureTextEntry={!showConfirmPassword} style={[styles.input, styles.passwordInput]} value={form.confirmPassword} onChangeText={(value) => setField('confirmPassword', value)} />
-                <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowConfirmPassword(v => !v)}>
-                  <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color={theme.colors.textMuted} />
-                </TouchableOpacity>
-              </View>
+            <View style={styles.stepper}>
+              {steps.map((s, i) => (
+                <View key={s.key} style={[styles.stepDot, i <= step && styles.stepDotActive]} />
+              ))}
             </View>
-          ) : null}
 
-          {step === 1 ? (
-            <View>
+            <Text style={styles.stepLabel}>Step {step + 1} of {steps.length} — {currentStep.label}</Text>
+            <Text style={styles.title}>
+              {currentStep.titlePrefix}
+              <Text style={styles.titleAccent}>{currentStep.titleAccent}</Text>
+            </Text>
+            <Text style={styles.subtitle}>{currentStep.subtitle}</Text>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            {step === 0 ? (
+              <View>
+                <View style={fieldStyle('email')}>
+                  <Ionicons name="mail-outline" size={16} color={AUTH_COLORS.onDark3} style={styles.fieldIcon} />
+                  <TextInput
+                    placeholder="Email"
+                    placeholderTextColor={AUTH_COLORS.onDark3}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    style={styles.input}
+                    value={form.email}
+                    onFocus={() => setFocused('email')}
+                    onBlur={() => setFocused('')}
+                    onChangeText={(value) => setField('email', value)}
+                  />
+                </View>
+                <View style={fieldStyle('username')}>
+                  <Ionicons name="person-outline" size={16} color={AUTH_COLORS.onDark3} style={styles.fieldIcon} />
+                  <TextInput
+                    placeholder="Username"
+                    placeholderTextColor={AUTH_COLORS.onDark3}
+                    autoCapitalize="none"
+                    style={styles.input}
+                    value={form.username}
+                    onFocus={() => setFocused('username')}
+                    onBlur={() => setFocused('')}
+                    onChangeText={(value) => setField('username', value)}
+                  />
+                </View>
+                <View style={fieldStyle('password')}>
+                  <Ionicons name="lock-closed-outline" size={16} color={AUTH_COLORS.onDark3} style={styles.fieldIcon} />
+                  <TextInput
+                    placeholder="Password"
+                    placeholderTextColor={AUTH_COLORS.onDark3}
+                    secureTextEntry={!showPassword}
+                    style={[styles.input, styles.inputWithToggle]}
+                    value={form.password}
+                    onFocus={() => setFocused('password')}
+                    onBlur={() => setFocused('')}
+                    onChangeText={(value) => setField('password', value)}
+                  />
+                  <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPassword((v) => !v)}>
+                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={AUTH_COLORS.onDark3} />
+                  </TouchableOpacity>
+                </View>
+                <View style={fieldStyle('confirmPassword')}>
+                  <Ionicons name="lock-closed-outline" size={16} color={AUTH_COLORS.onDark3} style={styles.fieldIcon} />
+                  <TextInput
+                    placeholder="Confirm password"
+                    placeholderTextColor={AUTH_COLORS.onDark3}
+                    secureTextEntry={!showConfirmPassword}
+                    style={[styles.input, styles.inputWithToggle]}
+                    value={form.confirmPassword}
+                    onFocus={() => setFocused('confirmPassword')}
+                    onBlur={() => setFocused('')}
+                    onChangeText={(value) => setField('confirmPassword', value)}
+                  />
+                  <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowConfirmPassword((v) => !v)}>
+                    <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={AUTH_COLORS.onDark3} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+
+            {step === 1 ? (
               <View style={styles.row}>
-                <TextInput placeholder="First name" placeholderTextColor={theme.colors.textMuted} style={[styles.input, styles.halfInput]} value={form.firstName} onChangeText={(value) => setField('firstName', value)} />
-                <TextInput placeholder="Last name" placeholderTextColor={theme.colors.textMuted} style={[styles.input, styles.halfInput]} value={form.lastName} onChangeText={(value) => setField('lastName', value)} />
+                <View style={[fieldStyle('firstName'), styles.halfField]}>
+                  <Ionicons name="person-outline" size={16} color={AUTH_COLORS.onDark3} style={styles.fieldIcon} />
+                  <TextInput
+                    placeholder="First name"
+                    placeholderTextColor={AUTH_COLORS.onDark3}
+                    style={styles.input}
+                    value={form.firstName}
+                    onFocus={() => setFocused('firstName')}
+                    onBlur={() => setFocused('')}
+                    onChangeText={(value) => setField('firstName', value)}
+                  />
+                </View>
+                <View style={[fieldStyle('lastName'), styles.halfField]}>
+                  <Ionicons name="person-outline" size={16} color={AUTH_COLORS.onDark3} style={styles.fieldIcon} />
+                  <TextInput
+                    placeholder="Last name"
+                    placeholderTextColor={AUTH_COLORS.onDark3}
+                    style={styles.input}
+                    value={form.lastName}
+                    onFocus={() => setFocused('lastName')}
+                    onBlur={() => setFocused('')}
+                    onChangeText={(value) => setField('lastName', value)}
+                  />
+                </View>
               </View>
-            </View>
-          ) : null}
+            ) : null}
 
-          {step === 2 ? (
-            <View>
+            {step === 2 ? (
+              <View>
+                <View style={fieldStyle('jobTitle')}>
+                  <Ionicons name="briefcase-outline" size={16} color={AUTH_COLORS.onDark3} style={styles.fieldIcon} />
+                  <TextInput
+                    placeholder="Job title (optional)"
+                    placeholderTextColor={AUTH_COLORS.onDark3}
+                    style={styles.input}
+                    value={form.jobTitle}
+                    onFocus={() => setFocused('jobTitle')}
+                    onBlur={() => setFocused('')}
+                    onChangeText={(value) => setField('jobTitle', value)}
+                  />
+                </View>
+                <View style={fieldStyle('experience')}>
+                  <Ionicons name="ribbon-outline" size={16} color={AUTH_COLORS.onDark3} style={styles.fieldIcon} />
+                  <TextInput
+                    placeholder="Experience (optional)"
+                    placeholderTextColor={AUTH_COLORS.onDark3}
+                    style={styles.input}
+                    value={form.experience}
+                    onFocus={() => setFocused('experience')}
+                    onBlur={() => setFocused('')}
+                    onChangeText={(value) => setField('experience', value)}
+                  />
+                </View>
+              </View>
+            ) : null}
 
-              <TextInput placeholder="Job title (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.jobTitle} onChangeText={(value) => setField('jobTitle', value)} />
-              <TextInput placeholder="Experience (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.experience} onChangeText={(value) => setField('experience', value)} />
-              <TextInput placeholder="Wallet address (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.walletAddress} onChangeText={(value) => setField('walletAddress', value)} />
-              {/* <TextInput placeholder="Organization ID (optional)" placeholderTextColor={theme.colors.textMuted} style={styles.input} value={form.organizationId} onChangeText={(value) => setField('organizationId', value)} /> */}
-            </View>
-          ) : null}
-
-          <View style={styles.actionsRow}>
-            {step > 0 ? (
-              <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]} onPress={handleBack}>
-                <Text style={styles.secondaryButtonText}>Back</Text>
+            <View style={styles.actionsRow}>
+              {step > 0 ? (
+                <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+                  <Ionicons name="arrow-back" size={14} color={AUTH_COLORS.onDark2} />
+                  <Text style={styles.backBtnText}>Back</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.spacer} />
+              )}
+              <TouchableOpacity activeOpacity={0.85} onPress={handleNext} disabled={loading} style={styles.nextBtnWrap}>
+                <LinearGradient colors={AUTH_BTN_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.nextBtn, loading && styles.btnDisabled]}>
+                  <Text style={styles.nextBtnText}>
+                    {step === steps.length - 1 ? (loading ? 'CREATING…' : 'CREATE ACCOUNT') : 'CONTINUE'}
+                  </Text>
+                  {!loading && <Ionicons name={step === steps.length - 1 ? 'checkmark-circle' : 'arrow-forward'} size={15} color={AUTH_COLORS.ink} />}
+                </LinearGradient>
               </TouchableOpacity>
-            ) : (
-              <View style={styles.spacer} />
-            )}
-            <TouchableOpacity style={[styles.actionButton, styles.primaryButton]} onPress={handleNext} disabled={loading}>
-              <Text style={styles.primaryButtonText}>{step === steps.length - 1 ? (loading ? 'Creating account…' : 'Create account') : 'Next'}</Text>
-            </TouchableOpacity>
-          </View>
+            </View>
 
-          <View style={styles.linkButton}>
-            <Text style={{ color: theme.colors.textMuted }}>
-              Already have an account?{' '}
-              <Text onPress={() => navigation.navigate('Login')} style={styles.linkText}>
+            <View style={styles.footRow}>
+              <Text style={styles.footText}>Already have an account? </Text>
+              <Text onPress={() => navigation.navigate('Login')} style={styles.footLink}>
                 Sign in
               </Text>
-            </Text>
+            </View>
           </View>
-        </GlassCard>
-      </ScrollView>
-    </ScreenContainer>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
-const getStyles = (theme) => StyleSheet.create({
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  flex: {
+    flex: 1,
+  },
+  restoringWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingVertical: 20
+    padding: 22,
+    paddingVertical: 32,
   },
   card: {
-    width: '100%'
-  },
-  progressWrap: {
-    marginBottom: 14
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 999,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: AUTH_COLORS.lineDark,
+    backgroundColor: AUTH_COLORS.cardBg,
+    padding: 24,
     overflow: 'hidden',
-    marginBottom: 6
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: theme.colors.primary,
-    borderRadius: 999
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 18,
   },
-  stepText: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600'
+  logoText: {
+    color: AUTH_COLORS.onDark,
+    fontFamily: AUTH_FONTS.sansBold,
+    fontSize: 14,
+    letterSpacing: -0.2,
+  },
+  stepper: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 16,
+  },
+  stepDot: {
+    flex: 1,
+    height: 3,
+    borderRadius: 99,
+    backgroundColor: AUTH_COLORS.lineDark,
+  },
+  stepDotActive: {
+    backgroundColor: AUTH_COLORS.tealLight,
+  },
+  stepLabel: {
+    color: AUTH_COLORS.onDark3,
+    fontFamily: AUTH_FONTS.sansMedium,
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   title: {
-    color: theme.colors.textMain,
+    color: '#ffffff',
+    fontFamily: AUTH_FONTS.sansMedium,
+    fontSize: 22,
+    lineHeight: 27,
+    letterSpacing: -0.3,
+  },
+  titleAccent: {
+    color: '#ffffff',
+    fontFamily: AUTH_FONTS.serifItalic,
     fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 8
   },
   subtitle: {
-    color: theme.colors.textMuted,
-    marginBottom: 18,
-    lineHeight: 22
+    color: AUTH_COLORS.onDark2,
+    fontFamily: AUTH_FONTS.sans,
+    fontSize: 13.5,
+    marginTop: 6,
+    marginBottom: 8,
   },
-  input: {
-    height: 52,
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 16,
+  error: {
+    marginTop: 8,
+    marginBottom: 4,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: AUTH_COLORS.dangerBg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    color: theme.colors.textMain,
-    paddingHorizontal: 16,
-    marginBottom: 12
-  },
-  passwordWrap: {
-    position: 'relative',
-    marginBottom: 12
-  },
-  passwordInput: {
-    marginBottom: 0,
-    paddingRight: 52
-  },
-  eyeBtn: {
-    position: 'absolute',
-    right: 14,
-    top: 0,
-    height: 52,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  halfInput: {
-    flex: 1
+    borderColor: AUTH_COLORS.dangerBorder,
+    color: AUTH_COLORS.danger,
+    fontFamily: AUTH_FONTS.sans,
+    fontSize: 13,
   },
   row: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12
+    gap: 10,
+    marginTop: 14,
+  },
+  halfField: {
+    flex: 1,
+    marginTop: 0,
+  },
+  field: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: AUTH_COLORS.lineDark,
+    backgroundColor: AUTH_COLORS.fieldBg,
+  },
+  fieldFocused: {
+    borderColor: AUTH_COLORS.cobalt,
+    backgroundColor: AUTH_COLORS.fieldBgFocus,
+  },
+  fieldError: {
+    borderColor: '#ef4444',
+  },
+  fieldIcon: {
+    marginLeft: 14,
+  },
+  input: {
+    flex: 1,
+    height: 50,
+    color: AUTH_COLORS.onDark,
+    fontFamily: AUTH_FONTS.sans,
+    fontSize: 14.5,
+    paddingHorizontal: 10,
+  },
+  inputWithToggle: {
+    paddingRight: 4,
+  },
+  eyeBtn: {
+    paddingHorizontal: 12,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   actionsRow: {
     flexDirection: 'row',
-    marginTop: 10,
-    gap: 10
+    gap: 10,
+    marginTop: 20,
   },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 16,
+  backBtn: {
+    flexShrink: 0,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center'
-  },
-  primaryButton: {
-    backgroundColor: theme.colors.primary
-  },
-  secondaryButton: {
-    backgroundColor: theme.colors.surfaceAlt,
+    gap: 6,
+    paddingHorizontal: 18,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: theme.colors.border
+    borderColor: AUTH_COLORS.lineDark,
+    justifyContent: 'center',
   },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontWeight: '700'
-  },
-  secondaryButtonText: {
-    color: theme.colors.textMain,
-    fontWeight: '700'
+  backBtnText: {
+    color: AUTH_COLORS.onDark2,
+    fontFamily: AUTH_FONTS.sansMedium,
+    fontSize: 13.5,
   },
   spacer: {
-    flex: 1
+    flex: 0,
+    width: 0,
   },
-  linkButton: {
+  nextBtnWrap: {
+    flex: 1,
+  },
+  nextBtn: {
+    height: 50,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  btnDisabled: {
+    opacity: 0.75,
+  },
+  nextBtnText: {
+    color: AUTH_COLORS.ink,
+    fontFamily: AUTH_FONTS.sansBold,
+    fontSize: 12.5,
+    letterSpacing: 0.8,
+  },
+  footRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
     marginTop: 18,
-    alignItems: 'center'
   },
-  linkText: {
-    color: theme.colors.primary,
-    fontWeight: '700'
+  footText: {
+    color: AUTH_COLORS.onDark2,
+    fontFamily: AUTH_FONTS.sans,
+    fontSize: 13.5,
   },
-  error: {
-    color: theme.colors.danger,
-    marginBottom: 12
-  }
+  footLink: {
+    color: AUTH_COLORS.sky2,
+    fontFamily: AUTH_FONTS.sansBold,
+    fontSize: 13.5,
+  },
 });
