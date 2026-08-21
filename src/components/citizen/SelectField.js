@@ -114,7 +114,7 @@ const getStyles = (t) =>
     },
     sheet: {
       width: '100%',
-      backgroundColor: t.surface,
+      backgroundColor: t.overlaySurface,
       borderWidth: 1,
       borderColor: t.borderLight,
       borderRadius: 18,

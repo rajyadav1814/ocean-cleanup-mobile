@@ -297,7 +297,7 @@ const getStyles = (t) =>
     },
     modalCard: {
       width: '100%',
-      backgroundColor: t.surface,
+      backgroundColor: t.overlaySurface,
       borderRadius: 18,
       borderWidth: 1,
       borderColor: t.borderLight,

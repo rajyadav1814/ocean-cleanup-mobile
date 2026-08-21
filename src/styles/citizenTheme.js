@@ -11,6 +11,7 @@ export const CITIZEN_LIGHT = {
   pageBg: '#F3F7FB',
   surface: '#FFFFFF',
   surfaceHover: '#F4F9FC',
+  overlaySurface: '#FFFFFF',
   borderLight: '#E4EDF4',
   borderGlow: '#7FC3E8',
   textMain: '#0A1E30',
@@ -29,6 +30,10 @@ export const CITIZEN_DARK = {
   pageBgGradient: ['#05192E', '#072744', '#08395F'],
   surface: 'rgba(255,255,255,0.05)',
   surfaceHover: 'rgba(255,255,255,0.08)',
+  // Solid (non-translucent) card tone for popovers/modals — `surface` is a
+  // frosted-glass tint meant to sit over the page gradient, which reads as
+  // near-invisible once it's on its own inside a modal scrim.
+  overlaySurface: '#0E2C47',
   borderLight: 'rgba(160,210,240,0.18)',
   borderGlow: '#7FC3E8',
   textMain: '#F2F7FA',

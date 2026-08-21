@@ -279,27 +279,13 @@ export default function SubmitActivityScreen() {
   }, []);
 
   const handleNext = useCallback(() => {
-    if (step === 1 && !form.latitude) {
-      setMessage('Please provide a location before proceeding.');
-      return;
-    }
-    const anyHazard = Object.values(form.hazards).some(Boolean);
-    if (step === 4 && anyHazard && photos.length === 0) {
-      setMessage('Please attach a hazard photo.');
-      return;
-    }
     setMessage('');
     setStepIndex((i) => Math.min(STEPS.length - 1, i + 1));
-  }, [step, form.latitude, form.hazards, photos.length]);
+  }, []);
 
   // ─── Submit ───────────────────────────────────────────────────────────────
 
   const handleSubmit = useCallback(async () => {
-    if (!form.waste.trim()) {
-      setMessage('Please provide the total weight collected.');
-      return;
-    }
-
     setLoading(true);
     setMessage('');
 
@@ -376,6 +362,22 @@ export default function SubmitActivityScreen() {
 
   const photoLimitReached = photos.length >= MAX_PHOTOS;
   const isLastStep = stepIndex === STEPS.length - 1;
+
+  // Each step gates the Next/Submit button on its own required field,
+  // rather than letting the user advance and only finding out on tap.
+  let isStepValid = true;
+  let stepHint = '';
+  if (step === 1 && !form.latitude) {
+    isStepValid = false;
+    stepHint = 'Detect a location to continue.';
+  } else if (step === 4 && photos.length === 0) {
+    isStepValid = false;
+    stepHint = 'Add at least one photo to continue.';
+  } else if (step === 6 && !form.waste.trim()) {
+    // Flagged inline on the field itself (required marker) instead of a
+    // bottom hint — the field sits at the top of a long step.
+    isStepValid = false;
+  }
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -501,10 +503,12 @@ export default function SubmitActivityScreen() {
               {/* ── Step 6: Disposal and review ── */}
               {step === 6 ? (
                 <View style={styles.stepBody}>
-                  <Text style={styles.fieldLabel}>Total weight collected (kg)</Text>
+                  <Text style={styles.fieldLabel}>
+                    Total weight collected (kg) <Text style={styles.fieldLabelRequired}>*</Text>
+                  </Text>
                   <TextInput
-                    style={styles.input}
-                    placeholder="18"
+                    style={[styles.input, !form.waste.trim() && styles.inputError]}
+                    placeholder="e.g., 18"
                     placeholderTextColor={t.textMuted}
                     value={form.waste}
                     onChangeText={(v) => setField('waste', v)}
@@ -567,6 +571,8 @@ export default function SubmitActivityScreen() {
                 </View>
               ) : null}
 
+              {!isStepValid && step !== 6 ? <Text style={styles.stepHint}>{stepHint}</Text> : null}
+
               {/* ── Nav buttons ── */}
               <View style={styles.navRow}>
                 {stepIndex > 0 ? (
@@ -578,10 +584,10 @@ export default function SubmitActivityScreen() {
                 )}
 
                 <TouchableOpacity
-                  style={styles.navFlex}
+                  style={[styles.navFlex, (!isStepValid || loading) && styles.navFlexDisabled]}
                   activeOpacity={0.85}
                   onPress={isLastStep ? handleSubmit : handleNext}
-                  disabled={loading}
+                  disabled={!isStepValid || loading}
                 >
                   <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.nextButton}>
                     <Text style={styles.nextButtonText}>
@@ -670,6 +676,10 @@ const getStyles = (t) =>
       color: t.textMuted,
       fontFamily: CITIZEN_FONTS.sans
     },
+    fieldLabelRequired: {
+      color: t.danger,
+      fontFamily: CITIZEN_FONTS.sansBold
+    },
     input: {
       backgroundColor: t.surfaceHover,
       borderRadius: 12,
@@ -684,6 +694,9 @@ const getStyles = (t) =>
       minHeight: 48
     },
     textArea: { minHeight: 84 },
+    inputError: {
+      borderColor: t.danger
+    },
 
     // ── Location ──────────────────────────────────────────────────────────
     locationButton: {
@@ -892,6 +905,15 @@ const getStyles = (t) =>
       borderRadius: 3
     },
 
+    stepHint: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 11.5,
+      textAlign: 'center',
+      marginTop: 4,
+      marginBottom: 2
+    },
+
     // ── Nav buttons ───────────────────────────────────────────────────────
     navRow: {
       flexDirection: 'row',
@@ -900,6 +922,9 @@ const getStyles = (t) =>
     },
     navFlex: {
       flex: 1
+    },
+    navFlexDisabled: {
+      opacity: 0.5
     },
     backButton: {
       flex: 1,
