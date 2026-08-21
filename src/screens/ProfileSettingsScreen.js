@@ -66,7 +66,7 @@ export default function ProfileSettingsScreen({ navigation }) {
     try {
       const res = await authUpdateProfile({
         ...formData,
-        yearsExperience: formData.yearsExperience ? parseInt(formData.yearsExperience, 10) : null
+        yearsExperience: formData.yearsExperience ? parseFloat(formData.yearsExperience) : null
       });
 
       if (res.ok) {
@@ -161,9 +161,9 @@ export default function ProfileSettingsScreen({ navigation }) {
               style={styles.input}
               value={formData.yearsExperience}
               onChangeText={(text) => handleChange('yearsExperience', text)}
-              placeholder="e.g. 5"
+              placeholder="e.g. 5.5"
               placeholderTextColor={t.textMuted}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
             />
           </View>
         </View>
