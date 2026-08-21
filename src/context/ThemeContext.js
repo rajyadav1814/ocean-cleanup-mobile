@@ -1,21 +1,10 @@
-import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
-import { Appearance } from 'react-native';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { themes } from '../theme';
 
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
-  const colorScheme = Appearance.getColorScheme() || 'dark';
-  const [mode, setMode] = useState(colorScheme === 'light' ? 'light' : 'dark');
-
-  useEffect(() => {
-    const listener = ({ colorScheme: scheme }) => {
-      setMode(scheme === 'light' ? 'light' : 'dark');
-    };
-
-    const subscription = Appearance.addChangeListener(listener);
-    return () => subscription.remove();
-  }, []);
+  const [mode, setMode] = useState('dark');
 
   const theme = useMemo(() => themes[mode], [mode]);
 

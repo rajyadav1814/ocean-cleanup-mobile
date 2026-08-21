@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
@@ -35,29 +35,56 @@ function normalizeImageUrl(value) {
   return trimmed;
 }
 
+function getThumbnailUrl(value) {
+  const normalized = normalizeImageUrl(value);
+  if (!normalized || !normalized.includes('gateway.pinata.cloud/ipfs/')) return normalized;
+
+  const separator = normalized.includes('?') ? '&' : '?';
+  return `${normalized}${separator}img-width=640&img-height=344&img-fit=cover&img-format=webp&img-quality=70`;
+}
+
+function getImageLoadUrls(value) {
+  const normalized = normalizeImageUrl(value);
+  if (!normalized) return [];
+
+  const urls = [getThumbnailUrl(normalized), normalized];
+  const cidMatch = normalized.match(/\/ipfs\/([^/?#]+)/i);
+
+  if (cidMatch) {
+    const cid = cidMatch[1];
+    urls.push(`https://ipfs.io/ipfs/${cid}`, `https://dweb.link/ipfs/${cid}`);
+  }
+
+  return [...new Set(urls.filter(Boolean))];
+}
+
 function getImageUrls(item) {
   const candidateSources = [
+    item.imageGatewayUrl,
+    item.imageGatewayUrls,
     item.images,
     item.imageUrls,
-    item.imageGatewayUrl,
     item.imageIpfsUrl,
     item.imageCid,
     item.image
   ];
 
   for (const source of candidateSources) {
-    const values = Array.isArray(source)
-      ? source
-      : typeof source === 'string' && source.length > 0
-        ? [source]
-        : [];
+    let values = Array.isArray(source) ? source : typeof source === 'string' && source.length > 0 ? [source] : [];
 
-    const normalized = values
-      .map((value) => normalizeImageUrl(value))
-      .filter(Boolean);
+    // Older API responses can contain an encoded JSON array in a text field.
+    if (values.length === 1 && typeof values[0] === 'string' && values[0].trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(values[0]);
+        if (Array.isArray(parsed)) values = parsed;
+      } catch {
+        // Keep the original value as a normal URL when it is not valid JSON.
+      }
+    }
 
+    const normalized = values.map((value) => normalizeImageUrl(value)).filter(Boolean);
     if (normalized.length > 0) {
-      return normalized;
+      return [...new Set(normalized)];
     }
   }
 
@@ -114,6 +141,36 @@ const FilterPill = memo(function FilterPill({ t, styles, filter, active, count, 
   );
 });
 
+const ActivityThumbnail = memo(function ActivityThumbnail({ uri, styles }) {
+  const loadUrls = getImageLoadUrls(uri);
+  const [sourceIndex, setSourceIndex] = useState(0);
+
+  useEffect(() => {
+    setSourceIndex(0);
+  }, [uri]);
+
+  if (sourceIndex >= loadUrls.length) {
+    return (
+      <View style={styles.mediaPlaceholder}>
+        <Text style={styles.mediaPlaceholderIcon}>🖼️</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri: loadUrls[sourceIndex], cache: 'force-cache' }}
+      style={styles.mediaImage}
+      resizeMode="cover"
+      resizeMethod="resize"
+      fadeDuration={150}
+      onError={() => {
+        setSourceIndex((current) => current + 1);
+      }}
+    />
+  );
+});
+
 const ActivityCard = memo(function ActivityCard({ item, t, styles, onImagePress }) {
   const status = getStatus(item);
   const meta = STATUS_META[status](t);
@@ -132,7 +189,7 @@ const ActivityCard = memo(function ActivityCard({ item, t, styles, onImagePress 
         disabled={!imageUri}
       >
         {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.mediaImage} resizeMode="cover" />
+          <ActivityThumbnail uri={imageUri} styles={styles} />
         ) : (
           <View style={styles.mediaPlaceholder}>
             <Text style={styles.mediaPlaceholderIcon}>🖼️</Text>
@@ -368,7 +425,11 @@ export default function MyActivityScreen() {
                 >
                   <Text style={styles.modalNavArrowText}>‹</Text>
                 </TouchableOpacity>
-                <Image source={{ uri: selectedImage.images[selectedImage.index] }} style={styles.modalImage} resizeMode="contain" />
+                <Image
+                  source={{ uri: selectedImage.images[selectedImage.index], cache: 'force-cache' }}
+                  style={styles.modalImage}
+                  resizeMode="contain"
+                />
                 <TouchableOpacity
                   style={styles.modalNavArrowRight}
                   onPress={goToNextImage}
@@ -389,7 +450,7 @@ export default function MyActivityScreen() {
                       activeOpacity={0.8}
                       style={[styles.thumbnailWrapper, selectedImage.index === index && { borderColor: t.borderGlow }]}
                     >
-                      <Image source={{ uri }} style={styles.thumbnailImage} resizeMode="cover" />
+                      <Image source={{ uri, cache: 'force-cache' }} style={styles.thumbnailImage} resizeMode="cover" />
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
