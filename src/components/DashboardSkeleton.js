@@ -1,45 +1,38 @@
 import React, { memo } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import ScreenContainer from './ScreenContainer';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../context/ThemeContext';
+import { getCitizenTheme } from '../styles/citizenTheme';
 
 /**
- * Skeleton placeholder for DashboardScreen.
- * Mirrors the real layout: hero card → stats grid → badges → leaderboard → feed.
+ * Loading placeholder for DashboardScreen — matches the citizen dashboard's
+ * light/dark background so there's no flash between skeleton and content.
  */
 const DashboardSkeleton = memo(function DashboardSkeleton() {
+  const { mode } = useTheme();
+  const t = getCitizenTheme(mode);
+  const Background = mode === 'dark' ? LinearGradient : View;
+  const backgroundProps =
+    mode === 'dark' ? { colors: t.pageBgGradient, start: { x: 0.85, y: 0 }, end: { x: 0.15, y: 1 } } : {};
+
   return (
-    <ScreenContainer>
+    <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2F80ED" />
+        <ActivityIndicator size="large" color={t.primary} />
       </View>
-    </ScreenContainer>
+    </Background>
   );
 });
 
 export default DashboardSkeleton;
 
 const styles = StyleSheet.create({
-  heroCard: { marginTop: 125, paddingBottom: 22 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 18
+  screen: {
+    flex: 1,
   },
-  statCard: { width: '48%', alignItems: 'center', paddingVertical: 18 },
-  badgeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between'
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  badgeTile: { width: '48%', marginBottom: 12 },
-  leaderRow: { paddingVertical: 14, borderBottomWidth: 0 },
-  feedRow: { paddingVertical: 14, alignItems: 'flex-start', borderBottomWidth: 0 },
-  flex1: { flex: 1 },
-  mb6: { marginBottom: 6 },
-  mb8: { marginBottom: 8 },
-  mb10: { marginBottom: 10 },
-  mb14: { marginBottom: 14 },
-  mb18: { marginBottom: 18 }
 });

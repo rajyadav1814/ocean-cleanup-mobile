@@ -1,51 +1,38 @@
 import React, { memo } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import ScreenContainer from './ScreenContainer';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../context/ThemeContext';
+import { getCitizenTheme } from '../styles/citizenTheme';
 
 /**
- * Skeleton placeholder for MyActivityScreen.
- * Mirrors: page title/subtitle → list of activity cards (image + details).
+ * Loading placeholder for MyActivityScreen — matches the citizen dashboard's
+ * light/dark background so there's no flash between skeleton and content.
  */
 const MyActivitySkeleton = memo(function MyActivitySkeleton() {
+  const { mode } = useTheme();
+  const t = getCitizenTheme(mode);
+  const Background = mode === 'dark' ? LinearGradient : View;
+  const backgroundProps =
+    mode === 'dark' ? { colors: t.pageBgGradient, start: { x: 0.85, y: 0 }, end: { x: 0.15, y: 1 } } : {};
+
   return (
-    <ScreenContainer>
+    <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2F80ED" />
+        <ActivityIndicator size="large" color={t.primary} />
       </View>
-    </ScreenContainer>
+    </Background>
   );
 });
 
 export default MyActivitySkeleton;
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    paddingTop: 44,
-    paddingBottom: 32
+  screen: {
+    flex: 1,
   },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  mb6: { marginBottom: 6 },
-  mb8: { marginBottom: 8 },
-  mb22: { marginBottom: 22 },
-  card: { padding: 0, overflow: 'hidden' },
-  imageSkeleton: {
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  cardBody: {
-    padding: 18,
-    paddingBottom: 18
-  },
-  headerRow: {
-    alignItems: 'flex-start',
-    marginBottom: 14
-  },
-  detailRow: {
-    alignItems: 'flex-start'
-  },
-  flex1: { flex: 1 },
-  detailRight: { alignItems: 'flex-end' }
 });

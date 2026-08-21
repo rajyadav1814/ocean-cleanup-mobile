@@ -1,10 +1,13 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useIsFocused } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useCitizenActivities } from '../services/citizenHooks';
-import ScreenContainer from '../components/ScreenContainer';
-import GlassCard from '../components/GlassCard';
+import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
+import WaveBar from '../components/citizen/WaveBar';
+import HeroWave from '../components/citizen/HeroWave';
+import WaveMark from '../components/citizen/WaveMark';
 import MyActivitySkeleton from '../components/MyActivitySkeleton';
 
 function normalizeImageUrl(value) {
@@ -61,91 +64,165 @@ function getImageUrls(item) {
   return [];
 }
 
-const ActivityCard = memo(function ActivityCard({ item, styles, onImagePress }) {
-  const activityDate = item && item.timestamp ? new Date(item.timestamp) : null;
+function formatActivityDate(timestamp) {
+  const date = timestamp ? new Date(timestamp) : null;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+const CAT_ICON = { plastic: '🧴', glass: '🍾', metal: '🥫', organic: '🍂', mixed: '🗑️', other: '📦' };
+
+const STATUS_META = {
+  approved: (t) => ({ color: t.success, label: 'Verified' }),
+  pending: (t) => ({ color: t.warning, label: 'Pending' }),
+  rejected: (t) => ({ color: t.danger, label: 'Rejected' }),
+};
+
+function getStatus(item) {
+  const value = String(item?.status || 'pending').toLowerCase();
+  if (value === 'approved') return 'approved';
+  if (value === 'rejected') return 'rejected';
+  return 'pending';
+}
+
+const FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'approved', label: 'Verified' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'rejected', label: 'Rejected' },
+];
+
+// ─── Pure sub-components ───────────────────────────────────────────────────
+
+const FilterPill = memo(function FilterPill({ t, styles, filter, active, count, onPress }) {
+  return (
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.filterWrap}>
+      {active ? (
+        <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.filterPill}>
+          <Text style={styles.filterTextActive}>
+            {filter.label} <Text style={styles.filterCountActive}>({count})</Text>
+          </Text>
+        </LinearGradient>
+      ) : (
+        <View style={styles.filterPill}>
+          <Text style={styles.filterText}>
+            {filter.label} <Text style={styles.filterCount}>({count})</Text>
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+});
+
+const ActivityCard = memo(function ActivityCard({ item, t, styles, onImagePress }) {
+  const status = getStatus(item);
+  const meta = STATUS_META[status](t);
   const imageUrls = getImageUrls(item || {});
   const imageUri = imageUrls[0] || null;
-  const photoCount = imageUrls.length || 0;
+  const photoCount = imageUrls.length;
+  const category = String(item?.category || 'other').toLowerCase();
+  const dateLabel = formatActivityDate(item?.timestamp);
 
   return (
-    <GlassCard style={styles.activityCard}>
+    <View style={styles.card}>
       <TouchableOpacity
-        style={styles.activityImageWrapper}
+        style={styles.media}
         activeOpacity={0.9}
         onPress={() => imageUri && onImagePress(item)}
         disabled={!imageUri}
       >
         {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.activityImage} resizeMode="cover" />
+          <Image source={{ uri: imageUri }} style={styles.mediaImage} resizeMode="cover" />
         ) : (
-          <View style={styles.placeholderImage}>
-            <Text style={styles.placeholderIcon}>🖼️</Text>
+          <View style={styles.mediaPlaceholder}>
+            <Text style={styles.mediaPlaceholderIcon}>🖼️</Text>
           </View>
         )}
 
-        <View style={[
-          styles.statusBadge,
-          item && item.status === 'rejected' ? styles.statusBadgeRejected : item && item.status !== 'approved' && styles.statusBadgePending
-        ]}>
-          <Text style={styles.statusBadgeText}>
-            {item && item.status === 'approved' ? '✔ VERIFIED' : item && (item.status === 'pending' || item.status === 'submitted') ? '⦿ PENDING' : item && item.status === 'rejected' ? '✖ REJECTED' : (item && item.status) || ''}
-          </Text>
+        <View style={[styles.mediaBadge, { backgroundColor: meta.color }]}>
+          <Text style={styles.mediaBadgeText}>{meta.label}</Text>
         </View>
 
+        {dateLabel ? (
+          <View style={styles.mediaDate}>
+            <Text style={styles.mediaDateText}>{dateLabel}</Text>
+          </View>
+        ) : null}
+
         {photoCount > 1 ? (
-          <View style={styles.moreBadge}>
-            <Text style={styles.moreBadgeText}>+{photoCount - 1} more</Text>
+          <View style={styles.mediaMore}>
+            <Text style={styles.mediaMoreText}>+{photoCount - 1} more</Text>
           </View>
         ) : null}
       </TouchableOpacity>
 
-      <View style={styles.activityHeader}>
-        <View style={styles.activityHeaderLeft}>
-          <Text style={styles.activityLocation}>{item && (item.location || 'Unknown location')}</Text>
-          <Text style={styles.activitySubtext}>{item && (item.city || item.address || '')}</Text>
-        </View>
-        <Text style={styles.activityDate}>{activityDate ? activityDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}</Text>
-      </View>
+      <View style={styles.cardBody}>
+        <Text style={styles.location} numberOfLines={2}>
+          {item?.location || 'Unknown location'}
+        </Text>
 
-      <View style={styles.activityDetailsRow}>
-        <View style={styles.detailBlock}>
-          <Text style={styles.detailLabel}>Category</Text>
-          <Text style={styles.detailValue}>{item && (item.category || 'Plastic')}</Text>
+        <View style={styles.chips}>
+          <View style={styles.chip}>
+            <Text style={styles.chipText}>
+              {CAT_ICON[category] || '📦'} <Text style={styles.chipStrong}>{item?.category || 'Other'}</Text>
+            </Text>
+          </View>
+          <View style={styles.chip}>
+            <Text style={styles.chipText}>
+              ⚖️{' '}
+              <Text style={styles.chipStrong}>
+                {typeof item?.quantity === 'number' ? item.quantity.toFixed(2) : item?.quantity || '0.00'} kg
+              </Text>
+            </Text>
+          </View>
+          {item?.volunteers > 0 ? (
+            <View style={styles.chip}>
+              <Text style={styles.chipText}>
+                🤝 <Text style={styles.chipStrong}>{item.volunteers}</Text> vol.
+              </Text>
+            </View>
+          ) : null}
         </View>
-        <View style={styles.detailBlockRight}>
-          <Text style={styles.detailLabel}>Quantity</Text>
-          <Text style={styles.quantityValue}>{item && typeof item.quantity === 'number' ? `${item.quantity.toFixed(2)} kg` : item && (item.quantity || '0.00 kg')}</Text>
-        </View>
+
+        {status === 'rejected' && item?.reviewNote ? (
+          <View style={styles.rejectNote}>
+            <Text style={styles.rejectNoteText}>{item.reviewNote}</Text>
+          </View>
+        ) : null}
       </View>
-    </GlassCard>
+    </View>
   );
 });
 
+// ─── Screen ─────────────────────────────────────────────────────────────────
+
 export default function MyActivityScreen() {
+  const navigation = useNavigation();
   const isFocused = useIsFocused();
-  const { theme } = useTheme();
-  const styles = useMemo(() => getStyles(theme), [theme]);
+  const { mode } = useTheme();
+  const t = useMemo(() => getCitizenTheme(mode), [mode]);
+  const styles = useMemo(() => getStyles(t), [t]);
+
   const { activities, loading } = useCitizenActivities(isFocused ? 1 : 0);
   const [selectedTab, setSelectedTab] = useState('all');
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  const counts = useMemo(() => {
-    const list = Array.isArray(activities) ? activities : [];
-    const total = list.length;
-    const approved = list.filter(a => a.status === 'approved').length;
-    const pending = list.filter(a => a.status === 'pending' || a.status === 'submitted').length;
-    const rejected = list.filter(a => a.status === 'rejected').length;
-    return { total, approved, pending, rejected };
-  }, [activities]);
+  const list = Array.isArray(activities) ? activities : [];
 
-  const filteredActivities = useMemo(() => {
-    const list = Array.isArray(activities) ? activities : [];
-    if (selectedTab === 'all') return list;
-    if (selectedTab === 'approved') return list.filter(a => a.status === 'approved');
-    if (selectedTab === 'pending') return list.filter(a => a.status === 'pending' || a.status === 'submitted');
-    if (selectedTab === 'rejected') return list.filter(a => a.status === 'rejected');
-    return list;
-  }, [activities, selectedTab]);
-  const [selectedImage, setSelectedImage] = React.useState(null);
+  const counts = useMemo(
+    () => ({
+      all: list.length,
+      approved: list.filter((a) => getStatus(a) === 'approved').length,
+      pending: list.filter((a) => getStatus(a) === 'pending').length,
+      rejected: list.filter((a) => getStatus(a) === 'rejected').length,
+    }),
+    [list]
+  );
+
+  const filteredActivities = useMemo(
+    () => (selectedTab === 'all' ? list : list.filter((a) => getStatus(a) === selectedTab)),
+    [list, selectedTab]
+  );
 
   const closeImagePreview = useCallback(() => setSelectedImage(null), []);
   const handleImagePress = useCallback((item) => {
@@ -156,67 +233,126 @@ export default function MyActivityScreen() {
   }, []);
 
   const goToPreviousImage = useCallback(() => {
-    setSelectedImage((current) =>
-      current && current.index > 0
-        ? { ...current, index: current.index - 1 }
-        : current
-    );
+    setSelectedImage((current) => (current && current.index > 0 ? { ...current, index: current.index - 1 } : current));
   }, []);
 
   const goToNextImage = useCallback(() => {
     setSelectedImage((current) =>
-      current && current.index < current.images.length - 1
-        ? { ...current, index: current.index + 1 }
-        : current
+      current && current.index < current.images.length - 1 ? { ...current, index: current.index + 1 } : current
     );
   }, []);
 
+  if (loading) {
+    return <MyActivitySkeleton />;
+  }
+
+  const Background = mode === 'dark' ? LinearGradient : View;
+  const backgroundProps =
+    mode === 'dark' ? { colors: t.pageBgGradient, start: { x: 0.85, y: 0 }, end: { x: 0.15, y: 1 } } : {};
+
   return (
-    <ScreenContainer style={styles.container}>
-      <Text style={styles.title}>My Activities</Text>
-      <Text style={styles.subtitle}>A record of your environmental impact contributions.</Text>
+    <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
+      <FlatList
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        data={filteredActivities}
+        keyExtractor={(item, i) => item?.id?.toString() || item?._id || String(item?.activityId) || String(i)}
+        renderItem={({ item }) => <ActivityCard item={item} t={t} styles={styles} onImagePress={handleImagePress} />}
+        ListHeaderComponent={
+          <>
+            {/* ── Hero ── */}
+            <View style={styles.hero}>
+              <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
 
-      {loading ? (
-        <MyActivitySkeleton />
-      ) : activities.length === 0 ? (
-        <GlassCard>
-          <Text style={styles.emptyText}>No activities found yet. Submit your first cleanup report to get started.</Text>
-        </GlassCard>
-      ) : (
-        <>
-          <View style={styles.tabContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
-              <TouchableOpacity style={[styles.tabPill, selectedTab === 'all' && styles.tabPillActive]} onPress={() => setSelectedTab('all')}>
-                <Text style={[styles.tabPillText, selectedTab === 'all' && styles.tabPillTextActive]}>All ({counts.total})</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.tabPill, selectedTab === 'approved' && styles.tabPillActive]} onPress={() => setSelectedTab('approved')}>
-                <Text style={[styles.tabPillText, selectedTab === 'approved' && styles.tabPillTextActive]}>Verified ({counts.approved})</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.tabPill, selectedTab === 'pending' && styles.tabPillActive]} onPress={() => setSelectedTab('pending')}>
-                <Text style={[styles.tabPillText, selectedTab === 'pending' && styles.tabPillTextActive]}>Pending ({counts.pending})</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.tabPill, selectedTab === 'rejected' && styles.tabPillActive]} onPress={() => setSelectedTab('rejected')}>
-                <Text style={[styles.tabPillText, selectedTab === 'rejected' && styles.tabPillTextActive]}>Rejected ({counts.rejected})</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
+              <View style={styles.heroWaveWrap} pointerEvents="none">
+                <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+              </View>
 
-          <FlatList
-            data={filteredActivities}
-          keyExtractor={(item) => item.id?.toString() || item._id || String(item.activityId) || String(Math.random())}
-          renderItem={({ item }) => <ActivityCard item={item} styles={styles} onImagePress={handleImagePress} />}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-        </>
-      )}
+              <View style={styles.heroKicker}>
+                <Text style={styles.eyebrow}>YOUR RECORD</Text>
+                <WaveMark color={t.borderGlow} primary={t.primary} />
+              </View>
+
+              <Text style={styles.h1}>
+                My <Text style={styles.h1Accent}>activities.</Text>
+              </Text>
+              <Text style={styles.heroSub}>
+                Every cleanup you've logged, in one place — a running record of your environmental impact
+                contributions.
+              </Text>
+
+              <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
+                <LinearGradient
+                  colors={[t.primary, t.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cta}
+                >
+                  <Text style={styles.ctaText}>Log a cleanup</Text>
+                  <Text style={styles.ctaArrow}>→</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            {/* ── Filters ── */}
+            {list.length > 0 ? (
+              <View style={styles.toolbar}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+                  {FILTERS.map((f) => (
+                    <FilterPill
+                      key={f.key}
+                      t={t}
+                      styles={styles}
+                      filter={f}
+                      active={selectedTab === f.key}
+                      count={counts[f.key]}
+                      onPress={() => setSelectedTab(f.key)}
+                    />
+                  ))}
+                </ScrollView>
+                <Text style={styles.countText}>
+                  Showing {filteredActivities.length} of {list.length}
+                </Text>
+              </View>
+            ) : null}
+          </>
+        }
+        ListEmptyComponent={
+          list.length === 0 ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyIcon}>🌊</Text>
+              <Text style={styles.emptyText}>No activities submitted yet. Start cleaning!</Text>
+              <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
+                <LinearGradient
+                  colors={[t.primary, t.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cta}
+                >
+                  <Text style={styles.ctaText}>Log your first cleanup</Text>
+                  <Text style={styles.ctaArrow}>→</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Text style={styles.emptyIcon}>🔎</Text>
+              <Text style={styles.emptyText}>
+                No {FILTERS.find((f) => f.key === selectedTab)?.label.toLowerCase()} activities to show.
+              </Text>
+            </View>
+          )
+        }
+      />
 
       <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={closeImagePreview}>
         <Pressable style={styles.modalOverlay} onPress={closeImagePreview}>
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
               <View style={styles.counterBadge}>
-                <Text style={styles.counterText}>{selectedImage ? `${selectedImage.index + 1}/${selectedImage.images.length}` : ''}</Text>
+                <Text style={styles.counterText}>
+                  {selectedImage ? `${selectedImage.index + 1}/${selectedImage.images.length}` : ''}
+                </Text>
               </View>
               <TouchableOpacity style={styles.closeButton} onPress={closeImagePreview} activeOpacity={0.8}>
                 <Text style={styles.closeButtonText}>✕</Text>
@@ -245,17 +381,13 @@ export default function MyActivityScreen() {
             ) : null}
             {selectedImage && selectedImage.images.length > 1 ? (
               <View style={styles.thumbnailSection}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.thumbnailScroll}
-                >
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbnailScroll}>
                   {selectedImage.images.map((uri, index) => (
                     <TouchableOpacity
                       key={`${uri}-${index}`}
                       onPress={() => setSelectedImage({ ...selectedImage, index })}
                       activeOpacity={0.8}
-                      style={[styles.thumbnailWrapper, selectedImage.index === index && styles.thumbnailWrapperActive]}
+                      style={[styles.thumbnailWrapper, selectedImage.index === index && { borderColor: t.borderGlow }]}
                     >
                       <Image source={{ uri }} style={styles.thumbnailImage} resizeMode="cover" />
                     </TouchableOpacity>
@@ -266,300 +398,385 @@ export default function MyActivityScreen() {
           </View>
         </Pressable>
       </Modal>
-    </ScreenContainer>
+    </Background>
   );
 }
 
-const getStyles = (theme) => StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    paddingBottom: 32
-  },
-  title: {
-    color: theme.colors.textMain,
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 8
-  },
-  subtitle: {
-    color: theme.colors.textMuted,
-    marginBottom: 18,
-    lineHeight: 20
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  emptyText: {
-    color: theme.colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20
-  },
-  listContent: {
-    paddingBottom: 16
-  },
-  tabBar: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    marginBottom: 6,
-    alignItems: 'center'
-  },
-  tabContainer: {
-    borderRadius: 14,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    marginBottom: 10,
-    overflow: 'hidden'
-  },
-  tabPill: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: 'transparent'
-  },
-  tabPillActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary
-  },
-  tabPillText: {
-    color: theme.colors.textMuted,
-    fontWeight: '700'
-  },
-  tabPillTextActive: {
-    color: theme.colors.textMain
-  },
-  activityCard: {
+const getStyles = (t) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingHorizontal: 16,
+      paddingTop: 14,
+      paddingBottom: 28,
+    },
+    hero: {
+      position: 'relative',
+      overflow: 'hidden',
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      padding: 20,
+      paddingBottom: 66,
+      marginBottom: 14,
+    },
+    heroWaveWrap: {
+      position: 'absolute',
+      right: -20,
+      bottom: -18,
+      opacity: 0.5,
+    },
+    heroKicker: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 12,
+    },
+    eyebrow: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 10,
+      letterSpacing: 2.2,
+      opacity: 0.85,
+    },
+    h1: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sansMedium,
+      fontSize: 22,
+      lineHeight: 29,
+      letterSpacing: -0.3,
+    },
+    h1Accent: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.serifItalic,
+      fontSize: 24,
+    },
+    heroSub: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 13,
+      lineHeight: 20,
+      marginTop: 10,
+    },
+    ctaWrap: {
+      marginTop: 18,
+      alignSelf: 'flex-start',
+    },
+    cta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 999,
+    },
+    ctaText: {
+      color: '#ffffff',
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 13.5,
+    },
+    ctaArrow: {
+      color: '#ffffff',
+      fontSize: 14,
+      fontFamily: CITIZEN_FONTS.sansBold,
+    },
+    toolbar: {
+      marginBottom: 14,
+    },
+    filters: {
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 14,
+      padding: 5,
+      gap: 4,
+    },
+    filterWrap: {
+      borderRadius: 10,
+      overflow: 'hidden',
+    },
+    filterPill: {
+      paddingHorizontal: 13,
+      paddingVertical: 8,
+      borderRadius: 10,
+    },
+    filterText: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 12.5,
+    },
+    filterCount: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 11,
+      opacity: 0.85,
+    },
+    filterTextActive: {
+      color: '#ffffff',
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 12.5,
+    },
+    filterCountActive: {
+      color: '#ffffff',
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 11,
+      opacity: 0.85,
+    },
+    countText: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 11.5,
+      marginTop: 8,
+      textAlign: 'right',
+    },
+    card: {
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      overflow: 'hidden',
+      marginBottom: 12,
+    },
+    media: {
+      width: '100%',
+      height: 172,
+      backgroundColor: t.surfaceHover,
+      position: 'relative',
+    },
+    mediaImage: {
+      width: '100%',
+      height: '100%',
+    },
+    mediaPlaceholder: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    mediaPlaceholderIcon: {
+      fontSize: 36,
+    },
+    mediaBadge: {
+      position: 'absolute',
+      top: 10,
+      left: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 999,
+    },
+    mediaBadgeText: {
+      color: '#ffffff',
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 10,
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    mediaDate: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      backgroundColor: 'rgba(4,18,31,0.72)',
+      paddingHorizontal: 9,
+      paddingVertical: 4,
+      borderRadius: 999,
+    },
+    mediaDateText: {
+      color: '#ffffff',
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 10.5,
+    },
+    mediaMore: {
+      position: 'absolute',
+      bottom: 10,
+      right: 10,
+      backgroundColor: 'rgba(4,18,31,0.82)',
+      paddingHorizontal: 9,
+      paddingVertical: 4,
+      borderRadius: 999,
+    },
+    mediaMoreText: {
+      color: '#ffffff',
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 10,
+    },
+    cardBody: {
       padding: 16,
-    overflow: 'hidden'
-  },
-  activityImageWrapper: {
-    width: '100%',
-    height: 120,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: theme.colors.surfaceAlt,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 14
-  },
-  activityImage: {
-    width: '100%',
-    height: '100%'
-  },
-  placeholderImage: {
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  placeholderIcon: {
-    fontSize: 44,
-    color: theme.colors.textMuted
-  },
-  statusBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(0, 128, 80, 0.95)',
-    borderRadius: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 6
-  },
-  statusBadgePending: {
-    backgroundColor: 'rgba(234, 150, 25, 0.95)'
-  },
-  statusBadgeRejected: {
-    backgroundColor: 'rgba(204, 40, 40, 0.95)'
-  },
-  statusBadgeText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12
-  },
-  moreBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6
-  },
-  moreBadgeText: {
-    color: '#fff',
-    fontSize: 12
-  },
-  activityHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 18,
-    paddingBottom: 12
-  },
-  activityHeaderLeft: {
-    flex: 1,
-    paddingRight: 12
-  },
-  activityLocation: {
-    color: theme.colors.textMain,
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8
-  },
-  activitySubtext: {
-    color: theme.colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18
-  },
-  activityDate: {
-    color: theme.colors.textMuted,
-    fontSize: 12
-  },
-  activityDetailsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingBottom: 18
-  },
-  detailBlock: {
-    flex: 1
-  },
-  detailBlockRight: {
-    alignItems: 'flex-end'
-  },
-  detailLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    marginBottom: 6
-  },
-  detailValue: {
-    color: theme.colors.textMain,
-    fontWeight: '700'
-  },
-  quantityValue: {
-    color: theme.colors.textMain,
-    fontWeight: '700'
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  modalContent: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20
-  },
-  modalImage: {
-    width: '100%',
-    height: '80%',
-    borderRadius: 20
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    zIndex: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 999,
-    width: 42,
-    height: 42,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700'
-  },
-  modalHeader: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12
-  },
-  counterBadge: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    alignSelf: 'flex-start'
-  },
-  counterText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700'
-  },
-  modalImageWrapper: {
-    width: '100%',
-    height: '70%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative'
-  },
-  modalNavArrowLeft: {
-    position: 'absolute',
-    left: 8,
-    top: '50%',
-    transform: [{ translateY: -22 }],
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 3
-  },
-  modalNavArrowRight: {
-    position: 'absolute',
-    right: 8,
-    top: '50%',
-    transform: [{ translateY: -22 }],
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 3
-  },
-  modalNavArrowText: {
-    color: '#fff',
-    fontSize: 28,
-    lineHeight: 28,
-    fontWeight: '700'
-  },
-  thumbnailSection: {
-    marginTop: 16,
-    width: '100%'
-  },
-  thumbnailScroll: {
-    paddingVertical: 8
-  },
-  thumbnailWrapper: {
-    marginRight: 12,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'transparent'
-  },
-  thumbnailWrapperActive: {
-    borderColor: '#4dd0e1'
-  },
-  thumbnailImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 16
-  }
-});
+    },
+    location: {
+      color: t.primaryHover,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 15,
+      lineHeight: 20,
+    },
+    chips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 10,
+    },
+    chip: {
+      backgroundColor: t.surfaceHover,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    chipText: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 12,
+    },
+    chipStrong: {
+      fontFamily: CITIZEN_FONTS.sansBold,
+    },
+    rejectNote: {
+      marginTop: 10,
+      backgroundColor: t.dangerBg,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+    },
+    rejectNoteText: {
+      color: t.danger,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 11.5,
+      lineHeight: 16,
+    },
+    empty: {
+      alignItems: 'center',
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      borderStyle: 'dashed',
+      paddingVertical: 40,
+      paddingHorizontal: 24,
+    },
+    emptyIcon: {
+      fontSize: 28,
+      marginBottom: 10,
+      opacity: 0.8,
+    },
+    emptyText: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 13,
+      textAlign: 'center',
+      lineHeight: 19,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.95)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      width: '100%',
+      height: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    modalImage: {
+      width: '100%',
+      height: '80%',
+      borderRadius: 20,
+    },
+    closeButton: {
+      position: 'absolute',
+      top: 12,
+      right: 12,
+      zIndex: 2,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      borderRadius: 999,
+      width: 42,
+      height: 42,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    closeButtonText: {
+      color: '#fff',
+      fontSize: 20,
+      fontFamily: CITIZEN_FONTS.sansBold,
+    },
+    modalHeader: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    counterBadge: {
+      backgroundColor: 'rgba(255,255,255,0.18)',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 999,
+      alignSelf: 'flex-start',
+    },
+    counterText: {
+      color: '#fff',
+      fontSize: 14,
+      fontFamily: CITIZEN_FONTS.sansBold,
+    },
+    modalImageWrapper: {
+      width: '100%',
+      height: '70%',
+      justifyContent: 'center',
+      alignItems: 'center',
+      position: 'relative',
+    },
+    modalNavArrowLeft: {
+      position: 'absolute',
+      left: 8,
+      top: '50%',
+      transform: [{ translateY: -22 }],
+      width: 44,
+      height: 44,
+      borderRadius: 999,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 3,
+    },
+    modalNavArrowRight: {
+      position: 'absolute',
+      right: 8,
+      top: '50%',
+      transform: [{ translateY: -22 }],
+      width: 44,
+      height: 44,
+      borderRadius: 999,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 3,
+    },
+    modalNavArrowText: {
+      color: '#fff',
+      fontSize: 28,
+      lineHeight: 28,
+      fontFamily: CITIZEN_FONTS.sansBold,
+    },
+    thumbnailSection: {
+      marginTop: 16,
+      width: '100%',
+    },
+    thumbnailScroll: {
+      paddingVertical: 8,
+    },
+    thumbnailWrapper: {
+      marginRight: 12,
+      borderRadius: 16,
+      overflow: 'hidden',
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    thumbnailImage: {
+      width: 80,
+      height: 80,
+      borderRadius: 16,
+    },
+  });

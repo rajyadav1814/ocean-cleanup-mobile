@@ -1,471 +1,494 @@
 import React, { memo, useMemo } from 'react';
-import { ScrollView, StyleSheet, View, Text } from 'react-native';
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useCitizenStats, useCitizenLeaderboard, useCitizenFeed } from '../services/citizenHooks';
 import { formatTimeAgo } from '../utils/formatTime';
-import ScreenContainer from '../components/ScreenContainer';
-import GlassCard from '../components/GlassCard';
-import BrandButton from '../components/BrandButton';
+import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
+import Panel from '../components/citizen/Panel';
+import StatusPill from '../components/citizen/StatusPill';
+import WaveMark from '../components/citizen/WaveMark';
+import HeroWave from '../components/citizen/HeroWave';
+import WaveBar from '../components/citizen/WaveBar';
 import DashboardSkeleton from '../components/DashboardSkeleton';
 
-// ─── Pure sub-components (memoized to avoid unnecessary re-renders) ───────────
+function memberSince(ts) {
+  if (!ts) return 'recently';
+  return new Date(ts).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+}
+
+// ─── Pure sub-components ───────────────────────────────────────────────────
+
+const StatCard = memo(function StatCard({ t, styles, label, value, sub, amber }) {
+  return (
+    <View style={styles.statCard}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={[styles.statValue, amber && { color: t.warning }]}>{value}</Text>
+      <Text style={styles.statSub}>{sub}</Text>
+    </View>
+  );
+});
 
 const BadgeTile = memo(function BadgeTile({ badge, styles }) {
   const earned = badge.earned;
   return (
-    <View style={[styles.badge, earned ? styles.badgeEarned : styles.badgeLocked]}>
+    <View style={[styles.badge, earned && styles.badgeEarned]}>
       <View style={[styles.badgeIcon, earned && styles.badgeIconEarned]}>
-        <Text style={[styles.badgeIconText, earned && styles.badgeIconTextEarned]}>{badge.icon}</Text>
+        <Text style={styles.badgeIconText}>{badge.icon || badge.title?.[0] || '?'}</Text>
       </View>
-      <Text style={styles.badgeTitle}>{badge.title}</Text>
-      <Text style={styles.badgeMeta}>{earned ? 'Earned' : badge.progressLabel}</Text>
+      <Text style={styles.badgeName}>{badge.title}</Text>
+      <Text style={[styles.badgeStatus, earned && styles.badgeStatusEarned]}>
+        {earned ? 'Earned' : badge.progressLabel || 'Locked'}
+      </Text>
     </View>
   );
 });
 
 const LeaderboardRow = memo(function LeaderboardRow({ row, styles }) {
-  const medal = row.rank <= 3 ? ['🥇', '🥈', '🥉'][row.rank - 1] : null;
+  const name = row.isMe ? 'You' : `${row.firstName || ''} ${row.lastName?.[0] ? row.lastName[0] + '.' : ''}`.trim();
   return (
-    <View style={[styles.leaderRow, row.isMe && styles.myLeaderRow]}>
-      <Text style={styles.leaderPosition}>{medal || row.rank}</Text>
-      <View style={styles.leaderNameGroup}>
-        <Text style={[styles.leaderName, row.isMe && styles.myLeaderName]}>
-          {row.isMe ? 'You' : `${row.firstName} ${row.lastName?.[0] || ''}.`}
-        </Text>
-        <Text style={styles.leaderSub}>{row.weekReports} reports</Text>
+    <View style={[styles.lbRow, row.isMe && styles.lbRowMe]}>
+      <Text style={[styles.lbRank, row.isMe && styles.lbRankMe]}>{String(row.rank).padStart(2, '0')}</Text>
+      <View style={[styles.lbAvatar, row.isMe && styles.lbAvatarMe]}>
+        <Text style={[styles.lbAvatarText, row.isMe && styles.lbAvatarTextMe]}>{row.initials || name[0]}</Text>
       </View>
+      <Text style={[styles.lbName, row.isMe && styles.lbNameMe]} numberOfLines={1}>{name}</Text>
+      <Text style={styles.lbCount}>{row.weekReports} report{row.weekReports !== 1 ? 's' : ''}</Text>
     </View>
   );
 });
 
-const FeedItem = memo(function FeedItem({ item, styles }) {
-  const statusLabel = item.status
-    ? item.status.charAt(0).toUpperCase() + item.status.slice(1)
-    : 'Unknown';
-  const wasteValue = item.quantity != null ? `${item.quantity} kg` : '0 kg';
-  const timeAgo = formatTimeAgo(item.submittedAt);
+const FeedRow = memo(function FeedRow({ item, t, styles }) {
+  const name = `${item.firstName || ''} ${item.lastName?.[0] ? item.lastName[0] + '.' : ''}`.trim();
   return (
-    <View key={item.id} style={styles.feedItem}>
-      <View style={styles.feedAvatar}>
-        <Text style={styles.feedAvatarText}>
-          {item.initials || `${item.firstName?.[0] || ''}${item.lastName?.[0] || ''}`}
+    <View style={styles.feedRow}>
+      <Text style={styles.feedTime}>{formatTimeAgo(item.submittedAt)}</Text>
+      <View style={styles.feedContent}>
+        <Text style={styles.feedText}>
+          <Text style={styles.feedName}>{name}</Text> logged a cleanup at {item.location}
         </Text>
-      </View>
-      <View style={styles.feedTextContent}>
-        <Text style={styles.feedName}>
-          {item.firstName} {item.lastName?.[0] ? `${item.lastName[0]}.` : ''}
-        </Text>
-        <Text style={styles.feedDesc}>logged a cleanup at {item.location}</Text>
-        <View style={styles.feedSummaryRow}>
-          <Text style={styles.feedSummaryText}>{wasteValue}</Text>
-          <Text style={styles.feedSummaryText}>· {item.volunteers ?? 0} vol.</Text>
-          <Text style={styles.feedSummaryText}>· {timeAgo}</Text>
+        <View style={styles.feedMeta}>
+          {item.quantity > 0 ? <Text style={styles.feedMetaText}>{item.quantity} kg</Text> : null}
+          {item.volunteers > 0 ? <Text style={styles.feedMetaText}>· {item.volunteers} vol.</Text> : null}
+          <StatusPill t={t} item={item} />
         </View>
       </View>
-      <View
-        style={[
-          styles.statusBadge,
-          item.status === 'approved' ? styles.statusBadgeApproved : item.status === 'rejected' ? styles.statusBadgeRejected : styles.statusBadgePending
-        ]}
-      >
-        <Text style={styles.statusBadgeText}>{statusLabel}</Text>
-      </View>
     </View>
   );
 });
 
-// ─── Screen ──────────────────────────────────────────────────────────────────
+// ─── Screen ─────────────────────────────────────────────────────────────────
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const { user } = useAuth();
-  const { theme } = useTheme();
-
-  // Memoize styles — recreated only when theme changes
-  const styles = useMemo(() => getStyles(theme), [theme]);
+  const { mode } = useTheme();
+  const t = useMemo(() => getCitizenTheme(mode), [mode]);
+  const styles = useMemo(() => getStyles(t), [t]);
 
   const refresh = isFocused ? 1 : 0;
   const { stats, loading: statsLoading } = useCitizenStats(refresh);
   const { leaderboard, myRow, loading: leaderboardLoading } = useCitizenLeaderboard(refresh);
-  const { feed, loading: feedLoading } = useCitizenFeed(5, refresh);
+  const { feed, loading: feedLoading } = useCitizenFeed(6, refresh);
   const loading = statsLoading || leaderboardLoading || feedLoading;
 
-  const firstName = user?.firstName || user?.displayName || 'there';
-  const totalReports = stats?.totalReports || 0;
-  const tier = stats?.tier || { label: '🌱 Newcomer' };
-  const badges = stats?.badges || [];
+  const s = stats || {};
+  const firstName = user?.firstName || user?.displayName?.split(' ')[0] || 'there';
+  const totalReports = s.totalReports || 0;
+  const badges = s.badges || [];
   const earned = useMemo(() => badges.filter((b) => b.earned), [badges]);
-  const rows = leaderboard || [];
-  const showMyRow = myRow && !rows.some((r) => r.isMe);
-  const allRows = useMemo(() => rows.concat(showMyRow ? [myRow] : []), [rows, showMyRow, myRow]);
+  const lbRows = leaderboard || [];
+  const showMyRow = myRow && !lbRows.some((r) => r.isMe);
+  const allRows = useMemo(() => lbRows.concat(showMyRow ? [myRow] : []), [lbRows, showMyRow, myRow]);
+  const sinceLabel = memberSince(s.memberSince);
 
   const statItems = useMemo(
     () => [
-      { value: totalReports, label: 'Reports' },
-      { value: `${Number(stats?.totalKg || 0).toFixed(1)} kg`, label: 'Waste logged' },
-      { value: earned.length, label: 'Badges earned' },
-      { value: stats?.cityRank ? `#${stats.cityRank}` : '—', label: 'City rank' }
+      { label: 'Reports', value: totalReports, sub: `since ${sinceLabel}` },
+      { label: 'Waste logged', value: `${Number(s.totalKg || 0).toFixed(1)} kg`, sub: 'verified + pending' },
+      {
+        label: 'Badges earned',
+        value: `${earned.length} / ${badges.length || 8}`,
+        sub: badges.find((b) => !b.earned)?.title || 'All earned!',
+        amber: true,
+      },
+      {
+        label: 'City rank',
+        value: s.cityRank ? `#${s.cityRank}` : '—',
+        sub: lbRows.length ? `of ${lbRows.length} citizens` : 'not ranked yet',
+      },
     ],
-    [totalReports, stats, earned.length]
+    [totalReports, s, sinceLabel, earned.length, badges, lbRows.length]
   );
 
   if (loading) {
     return <DashboardSkeleton />;
   }
 
+  const Background = mode === 'dark' ? LinearGradient : View;
+  const backgroundProps =
+    mode === 'dark' ? { colors: t.pageBgGradient, start: { x: 0.85, y: 0 }, end: { x: 0.15, y: 1 } } : {};
+
   return (
-    <ScreenContainer>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <GlassCard style={styles.heroCard}>
-          <View style={styles.heroHeader}>
-            <Text style={styles.heroTag}>CITIZEN SPACE</Text>
+    <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* ── Hero ── */}
+        <View style={styles.hero}>
+          <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+
+          <View style={styles.heroWaveWrap} pointerEvents="none">
+            <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
           </View>
-          <Text style={styles.heroTitle}>Hi {firstName}, thanks for keeping the coast clean</Text>
-          <Text style={styles.heroSubtitle}>
-            {totalReports} reports · member since{' '}
-            {stats?.memberSince
-              ? new Date(stats.memberSince).toLocaleDateString('en-IN', {
-                  month: 'short',
-                  year: 'numeric'
-                })
-              : 'recently'}
+
+          <View style={styles.heroKicker}>
+            <Text style={styles.eyebrow}>CITIZEN SPACE</Text>
+            <WaveMark color={t.borderGlow} primary={t.primary} />
+          </View>
+
+          <Text style={styles.h1}>
+            Hi {firstName} — the coast is <Text style={styles.h1Accent}>a little cleaner</Text> because you showed up.
           </Text>
-          <View style={styles.heroBadgeRow}>
-            <View style={styles.tierBadge}>
-              <Text style={styles.tierBadgeText}>{tier.label}</Text>
-            </View>
-          </View>
-          <BrandButton
-            title="+ Submit a Report"
-            onPress={() => navigation.navigate('Submit')}
-            style={styles.heroButton}
-          />
-        </GlassCard>
+          <Text style={styles.heroSub}>
+            {totalReports} report{totalReports !== 1 ? 's' : ''} logged since {sinceLabel}. Every entry feeds the
+            community map BlueMind uses to track where pollution is concentrating.
+          </Text>
 
-        {stats?.tier?.next && (
-          <GlassCard>
-            <Text style={styles.sectionTitle}>Progress to next tier</Text>
-            <Text style={styles.sectionSubtitle}>
-              You need {Math.max(0, (stats.nextAt || 0) - totalReports)} more reports to unlock{' '}
-              {stats.tier.next}.
-            </Text>
-            <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, { width: `${stats.progressPct || 0}%` }]} />
-            </View>
-            <Text style={styles.progressMeta}>{stats.progressLabel}</Text>
-          </GlassCard>
-        )}
+          <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
+            <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
+              <Text style={styles.ctaText}>Submit a report</Text>
+              <Text style={styles.ctaArrow}>→</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
 
+        {/* ── Stats ── */}
         <View style={styles.statsGrid}>
           {statItems.map((item) => (
-            <GlassCard key={item.label} style={styles.statCard}>
-              <Text style={styles.statValue}>{item.value}</Text>
-              <Text style={styles.statLabel}>{item.label}</Text>
-            </GlassCard>
+            <StatCard key={item.label} t={t} styles={styles} {...item} />
           ))}
         </View>
 
-        <View style={styles.sectionWrap}>
-          <GlassCard style={styles.badgesCard}>
-            <Text style={styles.sectionTitle}>Your badges</Text>
-            <Text style={styles.sectionSubtitle}>Earn by submitting reports and hitting milestones.</Text>
+        {/* ── Community feed ── */}
+        <Panel t={t} kicker="Community Feed" title="Latest reports" desc="Real-time submissions from citizens near you.">
+          {feed.length === 0 ? (
+            <Text style={styles.emptyText}>No reports yet — be the first!</Text>
+          ) : (
+            feed.slice(0, 6).map((item, i) => <FeedRow key={item.id || i} item={item} t={t} styles={styles} />)
+          )}
+        </Panel>
+
+        {/* ── Badges ── */}
+        <Panel t={t} kicker="Milestones" title="Your badges" desc="Earned by reporting and hitting streaks.">
+          {badges.length === 0 ? (
+            <Text style={styles.emptyText}>No badges yet.</Text>
+          ) : (
             <View style={styles.badgeGrid}>
               {badges.map((badge) => (
                 <BadgeTile key={badge.id} badge={badge} styles={styles} />
               ))}
             </View>
-          </GlassCard>
-
-          <GlassCard style={styles.leaderboardCard}>
-            <Text style={styles.sectionTitle}>This week's leaders</Text>
-            <Text style={styles.sectionSubtitle}>All citizens ranked by reports</Text>
-            {allRows.map((row, index) => (
-              <LeaderboardRow key={row.userId || index} row={row} styles={styles} />
-            ))}
-          </GlassCard>
-        </View>
-
-        <GlassCard>
-          <Text style={styles.sectionTitle}>Community feed</Text>
-          <Text style={styles.sectionSubtitle}>Latest reports from citizens</Text>
-          {feed.length === 0 ? (
-            <Text style={styles.emptyText}>No reports yet — be the first!</Text>
-          ) : (
-            feed
-              .slice(0, 5)
-              .map((item) => <FeedItem key={item.id} item={item} styles={styles} />)
           )}
-        </GlassCard>
+        </Panel>
+
+        {/* ── Leaderboard ── */}
+        <Panel t={t} kicker="This Week" title="Leaders" desc="Ranked by verified reports." style={{ marginBottom: 24 }}>
+          {allRows.length === 0 ? (
+            <Text style={styles.emptyText}>No citizens yet.</Text>
+          ) : (
+            allRows.map((row, i) => <LeaderboardRow key={row.userId || i} row={row} styles={styles} />)
+          )}
+        </Panel>
       </ScrollView>
-    </ScreenContainer>
+    </Background>
   );
 }
 
-const getStyles = (theme) =>
+const getStyles = (t) =>
   StyleSheet.create({
-    heroCard: {
-      paddingBottom: 22,
-      marginBottom: 16,
+    screen: {
+      flex: 1,
     },
-    heroTag: {
-      color: theme.colors.secondary,
-      fontWeight: '700',
-      marginBottom: 10,
-      letterSpacing: 0.6,
-      fontSize: 12
+    scrollContent: {
+      paddingHorizontal: 16,
+      paddingTop: 14,
+      paddingBottom: 28,
     },
-    heroTitle: {
-      color: theme.colors.textMain,
-      fontSize: 26,
-      fontWeight: '700',
-      marginBottom: 10,
-      lineHeight: 34
-    },
-    heroSubtitle: {
-      color: theme.colors.textMuted,
-      marginBottom: 18,
-      fontSize: 14,
-      lineHeight: 20
-    },
-    tierBadge: {
-      paddingVertical: 8,
-      paddingHorizontal: 14,
-      backgroundColor: theme.colors.surfaceAlt,
-      borderRadius: 16
-    },
-    tierBadgeText: {
-      color: theme.colors.textMain,
-      fontWeight: '700'
-    },
-    sectionTitle: {
-      color: theme.colors.textMain,
-      fontSize: 16,
-      fontWeight: '700',
-      marginBottom: 6
-    },
-    sectionSubtitle: {
-      color: theme.colors.textMuted,
-      marginBottom: 18,
-      lineHeight: 20,
-      fontSize: 13
-    },
-    heroHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 18
-    },
-    heroBadgeRow: {
-      flexDirection: 'row',
-      marginBottom: 18
-    },
-    heroButton: {
-      width: '100%',
-      marginTop: 0,
-      paddingVertical: 16,
-      borderRadius: 18
-    },
-    progressBarBackground: {
-      height: 12,
-      backgroundColor: theme.colors.surfaceAlt,
-      borderRadius: 999,
+    hero: {
+      position: 'relative',
       overflow: 'hidden',
-      marginBottom: 10
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      padding: 20,
+      paddingBottom: 66,
+      marginBottom: 14,
     },
-    progressBarFill: {
-      height: '100%',
-      backgroundColor: theme.colors.primary
+    heroWaveWrap: {
+      position: 'absolute',
+      right: -20,
+      bottom: -18,
+      opacity: 0.5,
     },
-    progressMeta: {
-      color: theme.colors.textMuted,
-      fontSize: 12
+    heroKicker: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 12,
+    },
+    eyebrow: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 10,
+      letterSpacing: 2.2,
+      opacity: 0.85,
+    },
+    h1: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sansMedium,
+      fontSize: 22,
+      lineHeight: 29,
+      letterSpacing: -0.3,
+    },
+    h1Accent: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.serifItalic,
+      fontSize: 24,
+    },
+    heroSub: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 13,
+      lineHeight: 20,
+      marginTop: 10,
+    },
+    ctaWrap: {
+      marginTop: 18,
+      alignSelf: 'flex-start',
+    },
+    cta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 999,
+    },
+    ctaText: {
+      color: '#ffffff',
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 13.5,
+    },
+    ctaArrow: {
+      color: '#ffffff',
+      fontSize: 14,
+      fontFamily: CITIZEN_FONTS.sansBold,
     },
     statsGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       justifyContent: 'space-between',
-      marginBottom: 18
+      marginBottom: 14,
     },
     statCard: {
       width: '48%',
-      paddingVertical: 18,
-      alignItems: 'center'
-    },
-    statValue: {
-      color: theme.colors.textMain,
-      fontSize: 24,
-      fontWeight: '800',
-      marginBottom: 8
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 10,
     },
     statLabel: {
-      color: theme.colors.textMuted,
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 9.5,
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+    },
+    statValue: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.sansMedium,
+      fontSize: 22,
+      marginTop: 6,
+      letterSpacing: -0.3,
+    },
+    statSub: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 10.5,
+      marginTop: 3,
+    },
+    emptyText: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
       fontSize: 13,
-      textAlign: 'center'
+      textAlign: 'center',
+      paddingVertical: 18,
     },
-    sectionWrap: {
-      flexDirection: 'column',
-      marginBottom: 16
+    feedRow: {
+      flexDirection: 'row',
+      gap: 12,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: t.borderLight,
     },
-    badgesCard: {
-      width: '100%'
+    feedTime: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 10.5,
+      width: 46,
+      flexShrink: 0,
+      paddingTop: 2,
+      lineHeight: 15,
     },
-    leaderboardCard: {
-      width: '100%'
+    feedContent: {
+      flex: 1,
+    },
+    feedText: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 13.5,
+      lineHeight: 19,
+    },
+    feedName: {
+      fontFamily: CITIZEN_FONTS.sansBold,
+      color: t.primaryHover,
+    },
+    feedMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 6,
+    },
+    feedMetaText: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 11,
     },
     badgeGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
     },
     badge: {
       width: '48%',
-      backgroundColor: theme.colors.surfaceAlt,
-      borderRadius: 18,
-      padding: 14,
-      marginBottom: 12
+      backgroundColor: t.surfaceHover,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 8,
+      alignItems: 'center',
+      marginBottom: 10,
     },
     badgeEarned: {
-      borderColor: theme.colors.primary,
-      borderWidth: 1
-    },
-    badgeLocked: {
-      opacity: 0.65
+      borderColor: 'rgba(46,158,155,0.32)',
+      backgroundColor: 'rgba(46,158,155,0.08)',
     },
     badgeIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: 14,
-      backgroundColor: theme.colors.surface,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      backgroundColor: t.surface,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 10
+      marginBottom: 8,
     },
     badgeIconEarned: {
-      backgroundColor: 'rgba(184,134,43,0.12)'
+      borderColor: t.borderGlow,
     },
     badgeIconText: {
-      fontSize: 18,
-      color: theme.colors.textMuted
+      fontSize: 15,
+      color: t.textMuted,
     },
-    badgeIconTextEarned: {
-      color: theme.colors.primary
-    },
-    badgeTitle: {
-      color: theme.colors.textMain,
-      fontWeight: '700',
-      marginBottom: 4
-    },
-    badgeMeta: {
-      color: theme.colors.textMuted,
-      fontSize: 12
-    },
-    leaderRow: {
-      paddingVertical: 14,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-      flexDirection: 'row',
-      alignItems: 'center'
-    },
-    myLeaderRow: {
-      backgroundColor: 'rgba(14,165,233,0.06)',
-      borderRadius: 14,
-      paddingHorizontal: 12,
-      marginBottom: 8
-    },
-    leaderPosition: {
-      width: 34,
-      fontSize: 14,
-      color: theme.colors.primary,
-      fontWeight: '700'
-    },
-    leaderNameGroup: {
-      flex: 1
-    },
-    leaderName: {
-      color: theme.colors.textMain,
-      fontWeight: '700'
-    },
-    myLeaderName: {
-      color: theme.colors.primary
-    },
-    leaderSub: {
-      color: theme.colors.textMuted,
-      fontSize: 12
-    },
-    emptyText: {
-      color: theme.colors.textMuted,
+    badgeName: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 11.5,
       textAlign: 'center',
-      paddingVertical: 16
+      lineHeight: 15,
     },
-    feedItem: {
+    badgeStatus: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 9.5,
+      marginTop: 3,
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    badgeStatusEarned: {
+      color: t.primary,
+    },
+    lbRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 14,
+      gap: 10,
+      paddingVertical: 11,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-      gap: 14
+      borderBottomColor: t.borderLight,
     },
-    feedAvatar: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-      backgroundColor: theme.colors.surfaceAlt,
-      alignItems: 'center',
-      justifyContent: 'center'
-    },
-    feedAvatarText: {
-      color: theme.colors.textMain,
-      fontWeight: '700'
-    },
-    feedTextContent: {
-      flex: 1
-    },
-    feedName: {
-      color: theme.colors.textMain,
-      fontSize: 14,
-      fontWeight: '700'
-    },
-    feedDesc: {
-      color: theme.colors.textMuted,
-      fontSize: 13,
-      marginTop: 4
-    },
-    feedSummaryRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 6,
-      marginTop: 10
-    },
-    feedSummaryText: {
-      color: theme.colors.textMuted,
-      fontSize: 12
-    },
-    statusBadge: {
+    lbRowMe: {
+      backgroundColor: 'rgba(46,158,155,0.08)',
+      borderRadius: 12,
       paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 999,
-      alignSelf: 'flex-start'
+      marginVertical: 2,
+      borderBottomWidth: 0,
     },
-    statusBadgeApproved: {
-      backgroundColor: 'rgba(22, 163, 74, 0.15)'
+    lbRank: {
+      width: 22,
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 12,
     },
-    statusBadgePending: {
-      backgroundColor: 'rgba(251, 191, 36, 0.15)'
+    lbRankMe: {
+      color: t.primary,
     },
-    statusBadgeRejected: {
-      backgroundColor: 'rgba(204, 40, 40, 0.12)'
-    },
-    statusBadgeText: {
-      color: theme.colors.textMain,
-      fontSize: 11,
-      fontWeight: '700'
-    },
-    loadingContainer: {
-      flex: 1,
+    lbAvatar: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: t.surfaceHover,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      alignItems: 'center',
       justifyContent: 'center',
-      alignItems: 'center'
-    }
+    },
+    lbAvatarMe: {
+      backgroundColor: 'rgba(46,158,155,0.14)',
+      borderColor: t.borderGlow,
+    },
+    lbAvatarText: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 10,
+    },
+    lbAvatarTextMe: {
+      color: t.primary,
+    },
+    lbName: {
+      flex: 1,
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 13.5,
+    },
+    lbNameMe: {
+      color: t.primaryHover,
+      fontFamily: CITIZEN_FONTS.sansBold,
+    },
+    lbCount: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 11.5,
+      flexShrink: 0,
+    },
   });

@@ -34,6 +34,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { getCitizenTheme, CITIZEN_FONTS } from './src/styles/citizenTheme';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -47,7 +48,9 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function AuthTabs() {
-  const { theme } = useTheme();
+  const { mode } = useTheme();
+  const t = getCitizenTheme(mode);
+  const tabBarBackground = mode === 'dark' ? t.pageBgGradient[1] : t.surface;
 
   return (
     <Tab.Navigator
@@ -55,8 +58,8 @@ function AuthTabs() {
         headerShown: false,
 
         tabBarStyle: {
-          backgroundColor: theme.colors.background,
-          borderTopColor: theme.colors.border,
+          backgroundColor: tabBarBackground,
+          borderTopColor: t.borderLight,
           borderTopWidth: 1,
           height: 72,
           paddingBottom: 15,
@@ -65,12 +68,12 @@ function AuthTabs() {
           shadowOpacity: 0,
         },
 
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textMuted,
+        tabBarActiveTintColor: t.primary,
+        tabBarInactiveTintColor: t.textMuted,
 
         tabBarLabelStyle: {
-          fontFamily: theme.fonts.sansMedium,
-          fontSize: 12,
+          fontFamily: CITIZEN_FONTS.sansMedium,
+          fontSize: 11.5,
         },
 
         tabBarIcon: ({ focused, color, size }) => {
@@ -135,8 +138,12 @@ function AuthTabs() {
 }
 
 function ProfileStack() {
+  const { mode } = useTheme();
+  const t = getCitizenTheme(mode);
+  const backgroundColor = mode === 'dark' ? t.pageBgGradient[1] : t.pageBg;
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor } }}>
       <Stack.Screen
         name="ProfileHome"
         component={HomeScreen}
