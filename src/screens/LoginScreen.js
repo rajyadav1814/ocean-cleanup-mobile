@@ -122,6 +122,12 @@ export default function LoginScreen() {
             </View>
             {fieldErrors.password ? <Text style={styles.errorText}>{fieldErrors.password}</Text> : null}
 
+            <View style={styles.forgotRow}>
+              <Text onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotLink}>
+                Forgot password?
+              </Text>
+            </View>
+
             <TouchableOpacity activeOpacity={0.85} onPress={handleSubmit} disabled={loading} style={styles.btnWrap}>
               <LinearGradient colors={AUTH_BTN_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.btn, loading && styles.btnDisabled]}>
                 <Text style={styles.btnText}>{loading ? 'SIGNING IN…' : 'SIGN IN'}</Text>

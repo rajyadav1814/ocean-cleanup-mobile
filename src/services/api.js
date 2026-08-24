@@ -73,6 +73,15 @@ export async function authSignup(payload) {
   return handleResponse(res);
 }
 
+export async function authRequestPasswordReset(email) {
+  const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  return handleResponse(res);
+}
+
 export async function authVerify(token) {
   const res = await fetch(`${API_BASE_URL}/api/auth/verify`, {
     method: 'GET',

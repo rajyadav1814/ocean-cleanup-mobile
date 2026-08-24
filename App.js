@@ -37,6 +37,7 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { getCitizenTheme, CITIZEN_FONTS } from './src/styles/citizenTheme';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import SubmitActivityScreen from './src/screens/SubmitActivityScreen';
@@ -223,6 +224,11 @@ function RootNavigator() {
           <Stack.Screen
             name="Signup"
             component={SignupScreen}
+          />
+
+          <Stack.Screen
+            name="ForgotPassword"
+            component={ForgotPasswordScreen}
           />
         </Stack.Navigator>
       )}
