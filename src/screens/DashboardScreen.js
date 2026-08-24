@@ -278,7 +278,7 @@ const getStyles = (t) =>
     scrollContent: {
       paddingHorizontal: 16,
       paddingTop: 14,
-      paddingBottom: 28,
+      paddingBottom: 80,
     },
     hero: {
       position: 'relative',

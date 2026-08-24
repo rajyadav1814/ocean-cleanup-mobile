@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image,
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { authUpdateProfile } from '../services/api';
@@ -11,6 +12,7 @@ import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
 export default function ProfileSettingsScreen({ navigation }) {
   const { user, updateUser } = useAuth();
   const { mode } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const t = useMemo(() => getCitizenTheme(mode), [mode]);
   const styles = useMemo(() => getStyles(t), [t]);
@@ -88,15 +90,25 @@ export default function ProfileSettingsScreen({ navigation }) {
 
   return (
     <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.75}>
           <Ionicons name="arrow-back" size={22} color={t.textMain} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <Text style={styles.headerSubtitle}>Keep your citizen profile current and recognizable.</Text>
+        </View>
         <View style={{ width: 34 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}>
+        <View style={styles.introCard}>
+          <Ionicons name="sparkles-outline" size={18} color={t.primary} />
+          <Text style={styles.introText}>
+            A clear profile makes it easier for teammates and coordinators to recognize your reports in the field.
+          </Text>
+        </View>
+
         <View style={styles.card}>
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
@@ -188,7 +200,7 @@ const getStyles = (t) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
-      paddingTop: 14
+      paddingBottom: 10
     },
     backButton: {
       width: 34,
@@ -206,10 +218,41 @@ const getStyles = (t) =>
       fontSize: 17,
       letterSpacing: -0.2
     },
+    headerTextWrap: {
+      flex: 1,
+      marginHorizontal: 12,
+      alignItems: 'center'
+    },
+    headerSubtitle: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 11.5,
+      lineHeight: 16,
+      textAlign: 'center',
+      marginTop: 3
+    },
     scrollContent: {
       paddingHorizontal: 16,
       paddingTop: 14,
       paddingBottom: 32
+    },
+    introCard: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      backgroundColor: t.surfaceHover,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 14
+    },
+    introText: {
+      flex: 1,
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 12.5,
+      lineHeight: 18
     },
     card: {
       backgroundColor: t.surface,

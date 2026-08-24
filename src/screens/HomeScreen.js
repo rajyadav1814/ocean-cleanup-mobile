@@ -13,6 +13,8 @@ export default function HomeScreen({ navigation }) {
 
   const t = useMemo(() => getCitizenTheme(mode), [mode]);
   const styles = useMemo(() => getStyles(t), [t]);
+  const memberSince = user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : 'recently';
+  const accountLabel = user?.role ? user.role.replace(/_/g, ' ') : 'community member';
 
   const handleLogout = () => {
     setLogoutModalVisible(false);
@@ -41,6 +43,16 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.profileInfo}>
               <Text style={styles.name}>{user?.displayName || 'Citizen'}</Text>
               <Text style={styles.role}>{user?.jobTitle ? user.jobTitle : user?.role || 'Community Member'}</Text>
+              <View style={styles.metaRow}>
+                <View style={styles.metaChip}>
+                  <Ionicons name="person-circle-outline" size={12} color={t.primary} />
+                  <Text style={styles.metaChipText}>{accountLabel}</Text>
+                </View>
+                <View style={styles.metaChip}>
+                  <Ionicons name="time-outline" size={12} color={t.primary} />
+                  <Text style={styles.metaChipText}>Since {memberSince}</Text>
+                </View>
+              </View>
             </View>
             <TouchableOpacity onPress={() => navigation.navigate('ProfileSettings')} style={styles.editButton} activeOpacity={0.75}>
               <Ionicons name="pencil-outline" size={18} color={t.textMuted} />
@@ -98,9 +110,11 @@ export default function HomeScreen({ navigation }) {
               )}
             </TouchableOpacity>
           </View>
+          <Text style={styles.themeHint}>The theme follows your mood, but your data stays the same either way.</Text>
         </View>
 
         <TouchableOpacity style={styles.signOutButton} activeOpacity={0.85} onPress={() => setLogoutModalVisible(true)}>
+          <Ionicons name="log-out-outline" size={16} color={t.danger} />
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -133,7 +147,7 @@ const getStyles = (t) =>
     scrollContent: {
       paddingHorizontal: 16,
       paddingTop: 14,
-      paddingBottom: 28
+      paddingBottom: 120
     },
     card: {
       backgroundColor: t.surface,
@@ -183,6 +197,28 @@ const getStyles = (t) =>
       fontFamily: CITIZEN_FONTS.sans,
       fontSize: 12.5,
       marginTop: 3
+    },
+    metaRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 10
+    },
+    metaChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+      backgroundColor: t.surfaceHover,
+      borderWidth: 1,
+      borderColor: t.borderLight
+    },
+    metaChipText: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 10.5
     },
     editButton: {
       width: 34,
@@ -245,6 +281,13 @@ const getStyles = (t) =>
       lineHeight: 18,
       marginBottom: 14
     },
+    themeHint: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 11.5,
+      lineHeight: 17,
+      marginTop: 12
+    },
     toggleRow: {
       flexDirection: 'row',
       gap: 10
@@ -275,12 +318,14 @@ const getStyles = (t) =>
       fontSize: 12.5
     },
     signOutButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
       borderRadius: 16,
       borderWidth: 1,
       borderColor: 'rgba(239,68,68,0.35)',
       height: 52,
-      justifyContent: 'center',
-      alignItems: 'center',
       marginTop: 4
     },
     signOutText: {

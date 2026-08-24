@@ -57,16 +57,33 @@ function AuthTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarHideOnKeyboard: true,
+        tabBarActiveBackgroundColor: 'rgba(46,158,155,0.14)',
+        tabBarInactiveBackgroundColor: 'transparent',
 
         tabBarStyle: {
           backgroundColor: tabBarBackground,
           borderTopColor: t.borderLight,
           borderTopWidth: 1,
-          height: 72,
-          paddingBottom: 15,
+          borderRadius: 24,
+          height: 68,
+          left: 14,
+          right: 14,
+          bottom: 14,
+          position: 'absolute',
+          paddingBottom: 8,
           paddingTop: 8,
-          elevation: 0,
-          shadowOpacity: 0,
+          marginHorizontal: 0,
+          elevation: 12,
+          shadowColor: '#000',
+          shadowOpacity: mode === 'dark' ? 0.22 : 0.08,
+          shadowOffset: { width: 0, height: 10 },
+          shadowRadius: 20,
+        },
+        tabBarItemStyle: {
+          borderRadius: 18,
+          marginHorizontal: 4,
+          marginVertical: 4,
         },
 
         tabBarActiveTintColor: t.primary,
@@ -74,7 +91,8 @@ function AuthTabs() {
 
         tabBarLabelStyle: {
           fontFamily: CITIZEN_FONTS.sansMedium,
-          fontSize: 11.5,
+          fontSize: 10.5,
+          marginBottom: 2,
         },
 
         tabBarIcon: ({ focused, color, size }) => {
@@ -107,7 +125,7 @@ function AuthTabs() {
           return (
             <Ionicons
               name={iconName}
-              size={size}
+              size={focused ? size + 1 : size}
               color={color}
             />
           );
