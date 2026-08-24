@@ -98,6 +98,7 @@ export default function DashboardScreen() {
   const s = stats || {};
   const firstName = user?.firstName || user?.displayName?.split(' ')[0] || 'there';
   const totalReports = s.totalReports || 0;
+  const isNewCitizen = totalReports === 0;
   const badges = s.badges || [];
   const earned = useMemo(() => badges.filter((b) => b.earned), [badges]);
   const lbRows = leaderboard || [];
@@ -138,72 +139,132 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* ── Hero ── */}
-        <View style={styles.hero}>
-          <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+        {isNewCitizen ? (
+          <>
+            <View style={styles.hero}>
+              <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
 
-          <View style={styles.heroWaveWrap} pointerEvents="none">
-            <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
-          </View>
+              <View style={styles.heroWaveWrap} pointerEvents="none">
+                <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+              </View>
 
-          <View style={styles.heroKicker}>
-            <Text style={styles.eyebrow}>CITIZEN SPACE</Text>
-            <WaveMark color={t.borderGlow} primary={t.primary} />
-          </View>
+              <View style={styles.heroKicker}>
+                <Text style={styles.eyebrow}>CITIZEN SPACE</Text>
+                <WaveMark color={t.borderGlow} primary={t.primary} />
+              </View>
 
-          <Text style={styles.h1}>
-            Hi {firstName} — the coast is <Text style={styles.h1Accent}>a little cleaner</Text> because you showed up.
-          </Text>
-          <Text style={styles.heroSub}>
-            {totalReports} report{totalReports !== 1 ? 's' : ''} logged since {sinceLabel}. Every entry feeds the
-            community map BlueMind uses to track where pollution is concentrating.
-          </Text>
+              <Text style={styles.h1}>
+                Hi {firstName} — the coast is <Text style={styles.h1Accent}>a little cleaner</Text> because you showed up.
+              </Text>
+              <Text style={styles.heroSub}>
+                0 reports logged since recently. Every entry feeds the community map BlueMind uses to track where
+                pollution is concentrating.
+              </Text>
 
-          <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
-            <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
-              <Text style={styles.ctaText}>Submit a report</Text>
-              <Text style={styles.ctaArrow}>→</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+              <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
+                <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
+                  <Text style={styles.ctaText}>Submit a report</Text>
+                  <Text style={styles.ctaArrow}>→</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
 
-        {/* ── Stats ── */}
-        <View style={styles.statsGrid}>
-          {statItems.map((item) => (
-            <StatCard key={item.label} t={t} styles={styles} {...item} />
-          ))}
-        </View>
+            <View style={styles.newUserCard}>
+              <View style={styles.newUserIconWrap}>
+                <LinearGradient
+                  colors={[t.primary, t.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.newUserIcon}
+                >
+                  <Text style={styles.newUserIconText}>▣</Text>
+                </LinearGradient>
+              </View>
 
-        {/* ── Community feed ── */}
-        <Panel t={t} kicker="Community Feed" title="Latest reports" desc="Real-time submissions from citizens near you.">
-          {feed.length === 0 ? (
-            <Text style={styles.emptyText}>No reports yet — be the first!</Text>
-          ) : (
-            feed.slice(0, 6).map((item, i) => <FeedRow key={item.id || i} item={item} t={t} styles={styles} />)
-          )}
-        </Panel>
+              <Text style={styles.newUserTitle}>Submit your first report to unlock your activity feed</Text>
+              <Text style={styles.newUserDesc}>
+                Once your first report is logged, this space fills in with the community feed, your badges, and where
+                you rank among nearby citizens.
+              </Text>
 
-        {/* ── Badges ── */}
-        <Panel t={t} kicker="Milestones" title="Your badges" desc="Earned by reporting and hitting streaks.">
-          {badges.length === 0 ? (
-            <Text style={styles.emptyText}>No badges yet.</Text>
-          ) : (
-            <View style={styles.badgeGrid}>
-              {badges.map((badge) => (
-                <BadgeTile key={badge.id} badge={badge} styles={styles} />
+              <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.newUserCtaWrap}>
+                <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
+                  <Text style={styles.ctaText}>Submit a report</Text>
+                  <Text style={styles.ctaArrow}>→</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* ── Hero ── */}
+            <View style={styles.hero}>
+              <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+
+              <View style={styles.heroWaveWrap} pointerEvents="none">
+                <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+              </View>
+
+              <View style={styles.heroKicker}>
+                <Text style={styles.eyebrow}>CITIZEN SPACE</Text>
+                <WaveMark color={t.borderGlow} primary={t.primary} />
+              </View>
+
+              <Text style={styles.h1}>
+                Hi {firstName} — the coast is <Text style={styles.h1Accent}>a little cleaner</Text> because you showed up.
+              </Text>
+              <Text style={styles.heroSub}>
+                {totalReports} report{totalReports !== 1 ? 's' : ''} logged since {sinceLabel}. Every entry feeds the
+                community map BlueMind uses to track where pollution is concentrating.
+              </Text>
+
+              <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
+                <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
+                  <Text style={styles.ctaText}>Submit a report</Text>
+                  <Text style={styles.ctaArrow}>→</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            {/* ── Stats ── */}
+            <View style={styles.statsGrid}>
+              {statItems.map((item) => (
+                <StatCard key={item.label} t={t} styles={styles} {...item} />
               ))}
             </View>
-          )}
-        </Panel>
 
-        {/* ── Leaderboard ── */}
-        <Panel t={t} kicker="This Week" title="Leaders" desc="Ranked by verified reports." style={{ marginBottom: 24 }}>
-          {allRows.length === 0 ? (
-            <Text style={styles.emptyText}>No citizens yet.</Text>
-          ) : (
-            allRows.map((row, i) => <LeaderboardRow key={row.userId || i} row={row} styles={styles} />)
-          )}
-        </Panel>
+            {/* ── Community feed ── */}
+            <Panel t={t} kicker="Community Feed" title="Latest reports" desc="Real-time submissions from citizens near you.">
+              {feed.length === 0 ? (
+                <Text style={styles.emptyText}>No reports yet — be the first!</Text>
+              ) : (
+                feed.slice(0, 6).map((item, i) => <FeedRow key={item.id || i} item={item} t={t} styles={styles} />)
+              )}
+            </Panel>
+
+            {/* ── Badges ── */}
+            <Panel t={t} kicker="Milestones" title="Your badges" desc="Earned by reporting and hitting streaks.">
+              {badges.length === 0 ? (
+                <Text style={styles.emptyText}>No badges yet.</Text>
+              ) : (
+                <View style={styles.badgeGrid}>
+                  {badges.map((badge) => (
+                    <BadgeTile key={badge.id} badge={badge} styles={styles} />
+                  ))}
+                </View>
+              )}
+            </Panel>
+
+            {/* ── Leaderboard ── */}
+            <Panel t={t} kicker="This Week" title="Leaders" desc="Ranked by verified reports." style={{ marginBottom: 24 }}>
+              {allRows.length === 0 ? (
+                <Text style={styles.emptyText}>No citizens yet.</Text>
+              ) : (
+                allRows.map((row, i) => <LeaderboardRow key={row.userId || i} row={row} styles={styles} />)
+              )}
+            </Panel>
+          </>
+        )}
       </ScrollView>
     </Background>
   );
@@ -289,6 +350,58 @@ const getStyles = (t) =>
       color: '#ffffff',
       fontSize: 14,
       fontFamily: CITIZEN_FONTS.sansBold,
+    },
+    newUserCard: {
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      paddingHorizontal: 18,
+      paddingVertical: 28,
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    newUserIconWrap: {
+      marginBottom: 16,
+    },
+    newUserIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.14,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 5,
+    },
+    newUserIconText: {
+      color: '#ffffff',
+      fontSize: 20,
+      fontFamily: CITIZEN_FONTS.sansBold,
+    },
+    newUserTitle: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 18,
+      lineHeight: 24,
+      textAlign: 'center',
+      maxWidth: 260,
+      letterSpacing: -0.2,
+    },
+    newUserDesc: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 12.5,
+      lineHeight: 19,
+      textAlign: 'center',
+      marginTop: 12,
+      marginBottom: 20,
+      maxWidth: 270,
+    },
+    newUserCtaWrap: {
+      alignSelf: 'center',
     },
     statsGrid: {
       flexDirection: 'row',
