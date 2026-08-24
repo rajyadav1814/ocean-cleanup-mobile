@@ -367,9 +367,9 @@ export default function MyActivityScreen() {
                     />
                   ))}
                 </ScrollView>
-                <Text style={styles.countText}>
+                {/* <Text style={styles.countText}>
                   Showing {filteredActivities.length} of {list.length}
-                </Text>
+                </Text> */}
               </View>
             ) : null}
           </>
@@ -471,7 +471,7 @@ const getStyles = (t) =>
     scrollContent: {
       paddingHorizontal: 16,
       paddingTop: 14,
-      paddingBottom: 28,
+      paddingBottom: 80,
     },
     hero: {
       position: 'relative',

@@ -616,7 +616,7 @@ const getStyles = (t) =>
       flexGrow: 1,
       paddingHorizontal: 16,
       paddingTop: 14,
-      paddingBottom: 28
+      paddingBottom: 80
     },
     card: {
       position: 'relative',
