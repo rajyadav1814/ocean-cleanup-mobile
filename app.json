@@ -25,6 +25,7 @@
     },
     "android": {
       "package": "com.bluemind.mobile",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png"
       }

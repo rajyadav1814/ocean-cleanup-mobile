@@ -186,11 +186,17 @@ export default function SignupScreen() {
   return (
     <LinearGradient colors={AUTH_GRADIENT} start={{ x: 0.85, y: 0 }} end={{ x: 0.15, y: 1 }} style={styles.screen}>
       <AuthBackdrop signals={SIGNALS} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+        style={styles.flex}
+      >
         <ScrollView
+          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         >
           <View style={styles.card}>
             <View style={styles.logoRow}>
