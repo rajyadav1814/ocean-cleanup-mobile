@@ -1,5 +1,17 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  FlatList,
+  Image,
+  Modal,
+  PanResponder,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -168,6 +180,105 @@ const ActivityThumbnail = memo(function ActivityThumbnail({ uri, styles }) {
         setSourceIndex((current) => current + 1);
       }}
     />
+  );
+});
+
+const ZoomableImage = memo(function ZoomableImage({ uri, style }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const gesture = useRef({
+    initialDistance: 0,
+    initialScale: 1,
+    startX: 0,
+    startY: 0,
+    moved: false,
+    startedAt: 0,
+    lastTapAt: 0,
+  }).current;
+
+  const getDistance = (touches) => {
+    if (touches.length < 2) return 0;
+    const [first, second] = touches;
+    return Math.hypot(second.pageX - first.pageX, second.pageY - first.pageY);
+  };
+
+  const reset = useCallback(
+    (nextScale = 1) => {
+      Animated.parallel([
+        Animated.spring(scale, { toValue: nextScale, useNativeDriver: true }),
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true }),
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }),
+      ]).start();
+    },
+    [scale, translateX, translateY]
+  );
+
+  const responder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderGrant: (event) => {
+          const touches = event.nativeEvent.touches;
+          gesture.initialDistance = getDistance(touches);
+          gesture.initialScale = scale.__getValue();
+          gesture.startX = translateX.__getValue();
+          gesture.startY = translateY.__getValue();
+          gesture.moved = false;
+          gesture.startedAt = Date.now();
+        },
+        onPanResponderMove: (event, state) => {
+          const touches = event.nativeEvent.touches;
+          const distance = getDistance(touches);
+
+          if (distance > 0 && gesture.initialDistance === 0) {
+            gesture.initialDistance = distance;
+            gesture.initialScale = scale.__getValue();
+            gesture.moved = true;
+            return;
+          }
+
+          if (distance > 0 && gesture.initialDistance > 0) {
+            const nextScale = Math.min(4, Math.max(1, gesture.initialScale * (distance / gesture.initialDistance)));
+            scale.setValue(nextScale);
+            gesture.moved = true;
+            return;
+          }
+
+          if (touches.length === 1 && gesture.initialDistance === 0 && gesture.initialScale > 1) {
+            translateX.setValue(gesture.startX + state.dx);
+            translateY.setValue(gesture.startY + state.dy);
+            gesture.moved = Math.abs(state.dx) > 4 || Math.abs(state.dy) > 4;
+          }
+        },
+        onPanResponderRelease: () => {
+          const now = Date.now();
+          const wasTap = !gesture.moved && now - gesture.startedAt < 250;
+          const isDoubleTap = wasTap && now - gesture.lastTapAt < 300;
+          gesture.lastTapAt = wasTap ? now : 0;
+          gesture.initialDistance = 0;
+
+          if (isDoubleTap) {
+            reset(scale.__getValue() > 1 ? 1 : 2.5);
+          } else if (wasTap && scale.__getValue() <= 1) {
+            reset();
+          }
+        },
+        onPanResponderTerminate: () => {
+          gesture.initialDistance = 0;
+        },
+      }),
+    [gesture, reset, scale, translateX, translateY]
+  );
+
+  return (
+    <View style={style} {...responder.panHandlers}>
+      <Animated.Image
+        source={{ uri, cache: 'force-cache' }}
+        style={[StyleSheet.absoluteFillObject, { transform: [{ translateX }, { translateY }, { scale }] }]}
+        resizeMode="contain"
+      />
+    </View>
   );
 });
 
@@ -425,11 +536,7 @@ export default function MyActivityScreen() {
                 >
                   <Text style={styles.modalNavArrowText}>‹</Text>
                 </TouchableOpacity>
-                <Image
-                  source={{ uri: selectedImage.images[selectedImage.index], cache: 'force-cache' }}
-                  style={styles.modalImage}
-                  resizeMode="contain"
-                />
+                <ZoomableImage uri={selectedImage.images[selectedImage.index]} style={styles.modalImage} />
                 <TouchableOpacity
                   style={styles.modalNavArrowRight}
                   onPress={goToNextImage}
