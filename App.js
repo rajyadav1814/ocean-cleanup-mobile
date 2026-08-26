@@ -42,6 +42,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import SubmitActivityScreen from './src/screens/SubmitActivityScreen';
 import MyActivityScreen from './src/screens/MyActivityScreen';
+import AnalysisScreen from './src/screens/AnalysisScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import ProfileSettingsScreen from './src/screens/ProfileSettingsScreen';
 
@@ -116,6 +117,12 @@ function AuthTabs() {
               : 'list-outline';
           }
 
+          if (route.name === 'Analysis') {
+            iconName = focused
+              ? 'analytics'
+              : 'analytics-outline';
+          }
+
           if (route.name === 'Profile') {
             iconName = focused
               ? 'person'
@@ -141,6 +148,12 @@ function AuthTabs() {
         name="MyActivity"
         component={MyActivityScreen}
         options={{ title: 'My Activity' }}
+      />
+
+      <Tab.Screen
+        name="Analysis"
+        component={AnalysisScreen}
+        options={{ title: 'AI Analysis' }}
       />
 
       <Tab.Screen

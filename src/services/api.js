@@ -122,5 +122,6 @@ export const citizenApi = {
   getFeed: (limit = 15) => apiGet(`/api/citizen/feed?limit=${limit}`),
   getActivities: () => apiGet('/api/citizen/activities'),
   getOrganizations: () => apiGet('/api/dashboard/organizations'),
+  analyzeImage: (payload) => apiPost('/api/ai/analyze-image', payload),
   submitReport: (formData) => apiPost('/api/activities', formData)
 };
