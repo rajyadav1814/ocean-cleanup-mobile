@@ -103,7 +103,7 @@ export default function AnalysisScreen() {
     <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.eyebrow}>AI WASTE SCANNER</Text>
-        <Text style={styles.title}>Analyse a <Text style={styles.accent}>cleanup image.</Text></Text>
+        <Text style={styles.title}>Analyse a <Text style={styles.accent}>image.</Text></Text>
         <Text style={styles.subtitle}>Upload a photo and AI will identify the garbage category, count visible items, and estimate the weight.</Text>
         <View style={styles.uploadCard}>
           {photo ? <Image source={{ uri: photo.uri }} style={styles.preview} resizeMode="cover" /> : <View style={styles.emptyPreview}><Ionicons name="scan-outline" size={42} color={t.primary} /><Text style={styles.emptyText}>Choose a cleanup photo</Text></View>}

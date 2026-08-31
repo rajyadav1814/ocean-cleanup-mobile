@@ -401,7 +401,7 @@ export default function SubmitActivityScreen() {
             <View style={styles.card}>
               <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} height={40} />
 
-              <Text style={styles.title}>Log a cleanup</Text>
+              <Text style={styles.title}>Submit Activity</Text>
               <Text style={styles.stepMeta}>
                 Step {stepIndex + 1} of {STEPS.length} — {STEPS[stepIndex].label}
               </Text>

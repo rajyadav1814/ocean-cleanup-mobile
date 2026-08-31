@@ -97,6 +97,7 @@ export default function DashboardScreen() {
 
   const s = stats || {};
   const firstName = user?.firstName || user?.displayName?.split(' ')[0] || 'there';
+  const lastName = user?.lastName || '';  
   const totalReports = s.totalReports || 0;
   const isNewCitizen = totalReports === 0;
   const badges = s.badges || [];
@@ -154,7 +155,7 @@ export default function DashboardScreen() {
               </View>
 
               <Text style={styles.h1}>
-                Hi {firstName} — the coast is <Text style={styles.h1Accent}>a little cleaner</Text> because you showed up.
+                Hi {firstName} {lastName} — the coast is <Text style={styles.h1Accent}>a little cleaner</Text> because you showed up.
               </Text>
               <Text style={styles.heroSub}>
                 0 reports logged since recently. Every entry feeds the community map BlueMind uses to track where
@@ -163,7 +164,7 @@ export default function DashboardScreen() {
 
               <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
                 <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
-                  <Text style={styles.ctaText}>Submit a report</Text>
+                  <Text style={styles.ctaText}>Submit Activity</Text>
                   <Text style={styles.ctaArrow}>→</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -189,7 +190,7 @@ export default function DashboardScreen() {
 
               <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.newUserCtaWrap}>
                 <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
-                  <Text style={styles.ctaText}>Submit a report</Text>
+                  <Text style={styles.ctaText}>Submit Activity</Text>
                   <Text style={styles.ctaArrow}>→</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -211,7 +212,7 @@ export default function DashboardScreen() {
               </View>
 
               <Text style={styles.h1}>
-                Hi {firstName} — the coast is <Text style={styles.h1Accent}>a little cleaner</Text> because you showed up.
+                Hi {firstName} {lastName} — the coast is <Text style={styles.h1Accent}>a little cleaner</Text> because you showed up.
               </Text>
               <Text style={styles.heroSub}>
                 {totalReports} report{totalReports !== 1 ? 's' : ''} logged since {sinceLabel}. Every entry feeds the
@@ -220,7 +221,7 @@ export default function DashboardScreen() {
 
               <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
                 <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
-                  <Text style={styles.ctaText}>Submit a report</Text>
+                  <Text style={styles.ctaText}>Submit Activity</Text>
                   <Text style={styles.ctaArrow}>→</Text>
                 </LinearGradient>
               </TouchableOpacity>

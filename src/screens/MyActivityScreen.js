@@ -456,7 +456,7 @@ export default function MyActivityScreen() {
                   end={{ x: 1, y: 1 }}
                   style={styles.cta}
                 >
-                  <Text style={styles.ctaText}>Log a cleanup</Text>
+                  <Text style={styles.ctaText}>Submit Activity</Text>
                   <Text style={styles.ctaArrow}>→</Text>
                 </LinearGradient>
               </TouchableOpacity>
