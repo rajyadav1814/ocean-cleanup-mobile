@@ -45,9 +45,16 @@ import MyActivityScreen from './src/screens/MyActivityScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import ProfileSettingsScreen from './src/screens/ProfileSettingsScreen';
+import { withSwipeNavigation } from './src/components/SwipeableTabScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+const SwipeDashboardScreen = withSwipeNavigation(DashboardScreen);
+const SwipeMyActivityScreen = withSwipeNavigation(MyActivityScreen);
+const SwipeAnalysisScreen = withSwipeNavigation(AnalysisScreen);
+const SwipeSubmitActivityScreen = withSwipeNavigation(SubmitActivityScreen);
+const SwipeProfileHomeScreen = withSwipeNavigation(HomeScreen, { tabName: 'Profile' });
 
 function AuthTabs() {
   const { mode } = useTheme();
@@ -72,7 +79,7 @@ function AuthTabs() {
           backgroundColor: tabBarBackground,
           borderTopColor: t.borderLight,
           borderTopWidth: 1,
-          borderRadius: 15,
+          borderRadius: 0,
           height: tabBarContentHeight + tabBarPaddingBottom,
           left: 0,
           right: 0,
@@ -88,7 +95,7 @@ function AuthTabs() {
           shadowRadius: 20,
         },
         tabBarItemStyle: {
-          borderRadius: 18,
+          borderRadius: 10,
           marginHorizontal: 4,
           marginVertical: 4,
         },
@@ -147,24 +154,24 @@ function AuthTabs() {
     >
       <Tab.Screen
         name="Dashboard"
-        component={DashboardScreen}
+        component={SwipeDashboardScreen}
       />
 
       <Tab.Screen
         name="MyActivity"
-        component={MyActivityScreen}
+        component={SwipeMyActivityScreen}
         options={{ title: 'My Activity' }}
       />
 
       <Tab.Screen
         name="Analysis"
-        component={AnalysisScreen}
+        component={SwipeAnalysisScreen}
         options={{ title: 'AI Analysis' }}
       />
 
       <Tab.Screen
         name="Submit"
-        component={SubmitActivityScreen}
+        component={SwipeSubmitActivityScreen}
       />
 
       <Tab.Screen
@@ -184,7 +191,7 @@ function ProfileStack() {
     <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor } }}>
       <Stack.Screen
         name="ProfileHome"
-        component={HomeScreen}
+        component={SwipeProfileHomeScreen}
       />
 
       <Stack.Screen

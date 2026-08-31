@@ -422,6 +422,7 @@ export default function MyActivityScreen() {
   return (
     <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
       <FlatList
+        removeClippedSubviews={false}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         data={filteredActivities}
