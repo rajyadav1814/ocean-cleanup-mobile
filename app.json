@@ -30,6 +30,9 @@
         "foregroundImage": "./assets/logo.png"
       }
     },
-    "owner": "keyur-cloudpeaks-team"
+    "owner": "keyur-cloudpeaks-team",
+    "plugins": [
+      "expo-audio"
+    ]
   }
 }

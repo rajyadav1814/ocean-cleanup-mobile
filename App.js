@@ -41,6 +41,7 @@ import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import SubmitActivityScreen from './src/screens/SubmitActivityScreen';
+import QuickReportScreen from './src/screens/QuickReportScreen';
 import MyActivityScreen from './src/screens/MyActivityScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
 import SplashScreen from './src/screens/SplashScreen';
@@ -53,7 +54,7 @@ const Tab = createBottomTabNavigator();
 const SwipeDashboardScreen = withSwipeNavigation(DashboardScreen);
 const SwipeMyActivityScreen = withSwipeNavigation(MyActivityScreen);
 const SwipeAnalysisScreen = withSwipeNavigation(AnalysisScreen);
-const SwipeSubmitActivityScreen = withSwipeNavigation(SubmitActivityScreen);
+const SwipeQuickReportScreen = withSwipeNavigation(QuickReportScreen, { tabName: 'Submit' });
 const SwipeProfileHomeScreen = withSwipeNavigation(HomeScreen, { tabName: 'Profile' });
 
 function AuthTabs() {
@@ -171,7 +172,7 @@ function AuthTabs() {
 
       <Tab.Screen
         name="Submit"
-        component={SwipeSubmitActivityScreen}
+        component={SubmitStack}
       />
 
       <Tab.Screen
@@ -179,6 +180,26 @@ function AuthTabs() {
         component={ProfileStack}
       />
     </Tab.Navigator>
+  );
+}
+
+function SubmitStack() {
+  const { mode } = useTheme();
+  const t = getCitizenTheme(mode);
+  const backgroundColor = mode === 'dark' ? t.pageBgGradient[1] : t.pageBg;
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor } }}>
+      <Stack.Screen
+        name="QuickReport"
+        component={SwipeQuickReportScreen}
+      />
+
+      <Stack.Screen
+        name="DetailedForm"
+        component={SubmitActivityScreen}
+      />
+    </Stack.Navigator>
   );
 }
 
