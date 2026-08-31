@@ -401,7 +401,10 @@ export default function SubmitActivityScreen() {
             <View style={styles.card}>
               <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} height={40} />
 
-              <Text style={styles.title}>Submit Activity</Text>
+              <View style={styles.titleRow}>
+                <Ionicons name="paper-plane-outline" size={18} color={t.primary} style={styles.titleIcon} />
+                <Text style={styles.title}>Submit Activity</Text>
+              </View>
               <Text style={styles.stepMeta}>
                 Step {stepIndex + 1} of {STEPS.length} — {STEPS[stepIndex].label}
               </Text>
@@ -626,6 +629,14 @@ const getStyles = (t) =>
       borderColor: t.borderLight,
       borderRadius: 16,
       padding: 20
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8
+    },
+    titleIcon: {
+      marginTop: 1
     },
     title: {
       color: t.textMain,

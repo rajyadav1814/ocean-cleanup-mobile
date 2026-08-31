@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useCitizenActivities } from '../services/citizenHooks';
@@ -441,9 +442,12 @@ export default function MyActivityScreen() {
                 <WaveMark color={t.borderGlow} primary={t.primary} />
               </View>
 
-              <Text style={styles.h1}>
-                My <Text style={styles.h1Accent}>activities.</Text>
-              </Text>
+              <View style={styles.h1Row}>
+                <Ionicons name="list-outline" size={20} color={t.primary} style={styles.h1Icon} />
+                <Text style={styles.h1}>
+                  My <Text style={styles.h1Accent}>activities.</Text>
+                </Text>
+              </View>
               <Text style={styles.heroSub}>
                 Every cleanup you've logged, in one place — a running record of your environmental impact
                 contributions.
@@ -609,6 +613,14 @@ const getStyles = (t) =>
       fontSize: 10,
       letterSpacing: 2.2,
       opacity: 0.85,
+    },
+    h1Row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    h1Icon: {
+      marginTop: 2,
     },
     h1: {
       color: t.textMain,

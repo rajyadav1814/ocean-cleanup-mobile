@@ -1,6 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -154,9 +155,12 @@ export default function DashboardScreen() {
                 <WaveMark color={t.borderGlow} primary={t.primary} />
               </View>
 
-              <Text style={styles.h1}>
-                Welcome back, {firstName} {lastName} 👋
-              </Text>
+              <View style={styles.h1Row}>
+                <Ionicons name="hand-left-outline" size={20} color={t.primary} style={styles.h1Icon} />
+                <Text style={styles.h1}>
+                  Welcome back, {firstName} {lastName}
+                </Text>
+              </View>
               <Text style={styles.heroSub}>
                 No reports submitted recently — your next report can help update the community map and pinpoint emerging pollution hotspots.
               </Text>
@@ -210,9 +214,12 @@ export default function DashboardScreen() {
                 <WaveMark color={t.borderGlow} primary={t.primary} />
               </View>
 
-              <Text style={styles.h1}>
-                Welcome back, {firstName} {lastName} 👋
-              </Text>
+              <View style={styles.h1Row}>
+                <Ionicons name="hand-left-outline" size={20} color={t.primary} style={styles.h1Icon} />
+                <Text style={styles.h1}>
+                  Welcome back, {firstName} {lastName}
+                </Text>
+              </View>
               <Text style={styles.heroSub}>
                 You've submitted {totalReports} report{totalReports !== 1 ? 's' : ''} since {sinceLabel}. Each one feeds the community map that shows where pollution is building up.
               </Text>
@@ -308,6 +315,14 @@ const getStyles = (t) =>
       fontSize: 10,
       letterSpacing: 2.2,
       opacity: 0.85,
+    },
+    h1Row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    h1Icon: {
+      marginTop: 2,
     },
     h1: {
       color: t.textMain,
