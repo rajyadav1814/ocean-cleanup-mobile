@@ -55,6 +55,20 @@ export async function apiPost(path, body) {
   return handleResponse(res);
 }
 
+// Multipart submit — used when a file (e.g. video) has to ride along as a
+// real upload rather than a base64 data URL in the JSON body. No
+// Content-Type header here: fetch sets the multipart boundary itself.
+export async function apiPostForm(path, formData) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {})
+    },
+    body: formData
+  });
+  return handleResponse(res);
+}
+
 export async function authLogin(username, password) {
   const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: 'POST',
@@ -123,5 +137,10 @@ export const citizenApi = {
   getActivities: () => apiGet('/api/citizen/activities'),
   getOrganizations: () => apiGet('/api/dashboard/organizations'),
   analyzeImage: (payload) => apiPost('/api/ai/analyze-image', payload),
-  submitReport: (formData) => apiPost('/api/activities', formData)
+  submitReport: (formData) => apiPost('/api/activities', formData),
+  submitReportForm: (formData) => apiPostForm('/api/activities', formData),
+  // Blue Mind quick-report classifier — draft an event from a photo, a
+  // voice note, or typed text. Exactly one of imageBase64/audioBase64/text
+  // should be set; see POST /api/ai/infer on the backend.
+  infer: (payload) => apiPost('/api/ai/infer', payload)
 };
