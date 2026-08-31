@@ -72,7 +72,7 @@ function AuthTabs() {
           backgroundColor: tabBarBackground,
           borderTopColor: t.borderLight,
           borderTopWidth: 1,
-          borderRadius: 24,
+          borderRadius: 15,
           height: tabBarContentHeight + tabBarPaddingBottom,
           left: 0,
           right: 0,
