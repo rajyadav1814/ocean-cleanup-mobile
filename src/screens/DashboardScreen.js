@@ -155,11 +155,10 @@ export default function DashboardScreen() {
               </View>
 
               <Text style={styles.h1}>
-                Hi {firstName} {lastName} — the coast is <Text style={styles.h1Accent}>a little cleaner</Text> because you showed up.
+                Welcome back, {firstName} {lastName} 👋
               </Text>
               <Text style={styles.heroSub}>
-                0 reports logged since recently. Every entry feeds the community map BlueMind uses to track where
-                pollution is concentrating.
+                No reports submitted recently — your next report can help update the community map and pinpoint emerging pollution hotspots.
               </Text>
 
               <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
@@ -212,11 +211,10 @@ export default function DashboardScreen() {
               </View>
 
               <Text style={styles.h1}>
-                Hi {firstName} {lastName} — the coast is <Text style={styles.h1Accent}>a little cleaner</Text> because you showed up.
+                Welcome back, {firstName} {lastName} 👋
               </Text>
               <Text style={styles.heroSub}>
-                {totalReports} report{totalReports !== 1 ? 's' : ''} logged since {sinceLabel}. Every entry feeds the
-                community map BlueMind uses to track where pollution is concentrating.
+                You've submitted {totalReports} report{totalReports !== 1 ? 's' : ''} since {sinceLabel}. Each one feeds the community map that shows where pollution is building up.
               </Text>
 
               <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
