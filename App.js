@@ -30,7 +30,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -52,7 +52,13 @@ const Tab = createBottomTabNavigator();
 function AuthTabs() {
   const { mode } = useTheme();
   const t = getCitizenTheme(mode);
+  const insets = useSafeAreaInsets();
   const tabBarBackground = mode === 'dark' ? t.pageBgGradient[1] : t.surface;
+
+  const tabBarGap = 0;
+  const tabBarBottom = insets.bottom > 0 ? insets.bottom + tabBarGap / 2 : tabBarGap;
+  const tabBarContentHeight = 55;
+  const tabBarPaddingBottom = insets.bottom > 0 ? Math.max(8, insets.bottom / 3) : 8;
 
   return (
     <Tab.Navigator
@@ -67,12 +73,12 @@ function AuthTabs() {
           borderTopColor: t.borderLight,
           borderTopWidth: 1,
           borderRadius: 24,
-          height: 68,
-          left: 14,
-          right: 14,
-          bottom: 14,
+          height: tabBarContentHeight + tabBarPaddingBottom,
+          left: 0,
+          right: 0,
+          bottom: tabBarBottom,
           position: 'absolute',
-          paddingBottom: 8,
+          paddingBottom: tabBarPaddingBottom,
           paddingTop: 8,
           marginHorizontal: 0,
           elevation: 12,
