@@ -1,5 +1,5 @@
-import React, { memo, useMemo } from 'react';
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import React, { memo, useEffect, useMemo, useRef } from 'react';
+import { Animated, ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
@@ -80,6 +80,35 @@ const FeedRow = memo(function FeedRow({ item, t, styles }) {
   );
 });
 
+const WavingHand = memo(function WavingHand({ color, size, style }) {
+  const rotate = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const wave = Animated.loop(
+      Animated.sequence([
+        Animated.timing(rotate, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(rotate, { toValue: -1, duration: 350, useNativeDriver: true }),
+        Animated.timing(rotate, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(rotate, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.delay(1200),
+      ])
+    );
+    wave.start();
+    return () => wave.stop();
+  }, [rotate]);
+
+  const rotateInterpolate = rotate.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ['-25deg', '25deg'],
+  });
+
+  return (
+    <Animated.View style={[style, { transform: [{ rotate: rotateInterpolate }] }]}>
+      <Ionicons name="hand-left-outline" size={size} color={color} />
+    </Animated.View>
+  );
+});
+
 // ─── Screen ─────────────────────────────────────────────────────────────────
 
 export default function DashboardScreen() {
@@ -156,7 +185,7 @@ export default function DashboardScreen() {
               </View>
 
               <View style={styles.h1Row}>
-                <Ionicons name="hand-left-outline" size={20} color={t.primary} style={styles.h1Icon} />
+                <WavingHand color={t.primary} size={20} style={styles.h1Icon} />
                 <Text style={styles.h1}>
                   Welcome back, {firstName} {lastName}
                 </Text>
@@ -215,7 +244,7 @@ export default function DashboardScreen() {
               </View>
 
               <View style={styles.h1Row}>
-                <Ionicons name="hand-left-outline" size={20} color={t.primary} style={styles.h1Icon} />
+                <WavingHand color={t.primary} size={20} style={styles.h1Icon} />
                 <Text style={styles.h1}>
                   Welcome back, {firstName} {lastName}
                 </Text>
