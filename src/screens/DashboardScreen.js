@@ -13,6 +13,7 @@ import StatusPill from '../components/citizen/StatusPill';
 import WaveMark from '../components/citizen/WaveMark';
 import HeroWave from '../components/citizen/HeroWave';
 import WaveBar from '../components/citizen/WaveBar';
+import OceanCreatures from '../components/citizen/OceanCreatures';
 import DashboardSkeleton from '../components/DashboardSkeleton';
 
 function memberSince(ts) {
@@ -175,6 +176,10 @@ export default function DashboardScreen() {
             <View style={styles.hero}>
               <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
 
+              <View style={styles.creaturesWrap} pointerEvents="none">
+                <OceanCreatures primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+              </View>
+
               <View style={styles.heroWaveWrap} pointerEvents="none">
                 <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
               </View>
@@ -233,6 +238,10 @@ export default function DashboardScreen() {
             {/* ── Hero ── */}
             <View style={styles.hero}>
               <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+
+              <View style={styles.creaturesWrap} pointerEvents="none">
+                <OceanCreatures primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+              </View>
 
               <View style={styles.heroWaveWrap} pointerEvents="none">
                 <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
@@ -331,6 +340,9 @@ const getStyles = (t) =>
       right: -20,
       bottom: -18,
       opacity: 0.5,
+    },
+    creaturesWrap: {
+      ...StyleSheet.absoluteFillObject,
     },
     heroKicker: {
       flexDirection: 'row',
