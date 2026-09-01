@@ -63,10 +63,9 @@ function AuthTabs() {
   const insets = useSafeAreaInsets();
   const tabBarBackground = mode === 'dark' ? t.pageBgGradient[1] : t.surface;
 
-  const tabBarGap = 0;
-  const tabBarBottom = insets.bottom > 0 ? insets.bottom + tabBarGap / 2 : tabBarGap;
+  const tabBarBottom = 0;
   const tabBarContentHeight = 55;
-  const tabBarPaddingBottom = insets.bottom > 0 ? Math.max(8, insets.bottom / 3) : 8;
+  const tabBarPaddingBottom = insets.bottom > 0 ? insets.bottom + 8 : 8;
 
   return (
     <Tab.Navigator
