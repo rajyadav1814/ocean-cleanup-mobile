@@ -295,7 +295,7 @@ export default function DashboardScreen() {
               {allRows.length === 0 ? (
                 <Text style={styles.emptyText}>No citizens yet.</Text>
               ) : (
-                allRows.map((row, i) => <LeaderboardRow key={row.userId || i} row={row} styles={styles} />)
+                allRows.slice(0, 6).map((row, i) => <LeaderboardRow key={row.userId || i} row={row} styles={styles} />)
               )}
             </Panel>
           </>
