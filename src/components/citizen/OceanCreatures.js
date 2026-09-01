@@ -14,6 +14,20 @@ function Fish({ color, size = 22 }) {
   );
 }
 
+function Whale({ color, size = 34 }) {
+  return (
+    <Svg width={size} height={size * 0.55} viewBox="0 0 64 34" fill="none">
+      <Path
+        d="M4 18 C4 8, 20 4, 34 6 C48 8, 58 12, 58 18 C58 24, 44 28, 28 28 C14 28, 4 26, 4 18 Z"
+        fill={color}
+        opacity={0.85}
+      />
+      <Path d="M58 18 L64 10 L60 18 L64 26 Z" fill={color} opacity={0.85} />
+      <Circle cx="14" cy="14" r="1.8" fill="#ffffff" opacity={0.9} />
+    </Svg>
+  );
+}
+
 function Turtle({ color, size = 26 }) {
   return (
     <Svg width={size} height={size * 0.68} viewBox="0 0 44 30" fill="none">
@@ -99,6 +113,7 @@ export default function OceanCreatures({ primary, secondary, borderGlow }) {
       <SwimmingCreature Icon={Fish} color={primary} size={13} bottom={6} duration={6500} delay={5600} />
       <SwimmingCreature Icon={Turtle} color={borderGlow} size={24} bottom={22} duration={13000} delay={2600} facesRight />
       <SwimmingCreature Icon={Turtle} color={secondary} size={18} bottom={38} duration={11000} delay={7200} facesRight />
+      <SwimmingCreature Icon={Whale} color={primary} size={34} bottom={4} duration={17000} delay={500} />
     </>
   );
 }
