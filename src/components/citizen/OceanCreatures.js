@@ -28,6 +28,20 @@ function Whale({ color, size = 34 }) {
   );
 }
 
+function Octopus({ color, size = 24 }) {
+  return (
+    <Svg width={size} height={size * 0.9} viewBox="0 0 40 36" fill="none">
+      <Circle cx="14" cy="14" r="12" fill={color} opacity={0.85} />
+      <Circle cx="10" cy="11" r="1.6" fill="#ffffff" opacity={0.9} />
+      <Circle cx="18" cy="11" r="1.6" fill="#ffffff" opacity={0.9} />
+      <Path d="M6 22 Q4 28, 8 34" stroke={color} strokeWidth={2.4} opacity={0.75} strokeLinecap="round" />
+      <Path d="M12 24 Q12 30, 14 36" stroke={color} strokeWidth={2.4} opacity={0.75} strokeLinecap="round" />
+      <Path d="M18 24 Q20 30, 18 36" stroke={color} strokeWidth={2.4} opacity={0.75} strokeLinecap="round" />
+      <Path d="M24 22 Q28 27, 26 33" stroke={color} strokeWidth={2.4} opacity={0.75} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 function Turtle({ color, size = 26 }) {
   return (
     <Svg width={size} height={size * 0.68} viewBox="0 0 44 30" fill="none">
@@ -108,12 +122,14 @@ export default function OceanCreatures({ primary, secondary, borderGlow }) {
   return (
     <>
       <SwimmingCreature Icon={Fish} color={primary} size={20} bottom={34} duration={9000} delay={0} />
+      <SwimmingCreature Icon={Octopus} color={secondary} size={20} bottom={16} duration={10500} delay={3600} />
       <SwimmingCreature Icon={Fish} color={secondary} size={15} bottom={12} duration={7000} delay={1800} />
       <SwimmingCreature Icon={Fish} color={borderGlow} size={17} bottom={44} duration={8000} delay={4200} />
       <SwimmingCreature Icon={Fish} color={primary} size={13} bottom={6} duration={6500} delay={5600} />
       <SwimmingCreature Icon={Turtle} color={borderGlow} size={24} bottom={22} duration={13000} delay={2600} facesRight />
       <SwimmingCreature Icon={Turtle} color={secondary} size={18} bottom={38} duration={11000} delay={7200} facesRight />
       <SwimmingCreature Icon={Whale} color={primary} size={34} bottom={4} duration={17000} delay={500} />
+      <SwimmingCreature Icon={Octopus} color={secondary} size={20} bottom={16} duration={10500} delay={3600} />
     </>
   );
 }
