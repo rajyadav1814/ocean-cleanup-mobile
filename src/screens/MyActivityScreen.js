@@ -398,7 +398,7 @@ export default function MyActivityScreen() {
     setActivitiesExpanded(false);
   }, [selectedTab]);
 
-  const visibleActivities = activitiesExpanded ? filteredActivities : filteredActivities.slice(0, 10);
+  const visibleActivities = activitiesExpanded ? filteredActivities : filteredActivities.slice(0, 5);
 
   const closeImagePreview = useCallback(() => setSelectedImage(null), []);
   const handleImagePress = useCallback((item) => {
@@ -498,7 +498,7 @@ export default function MyActivityScreen() {
           </>
         }
         ListFooterComponent={
-          filteredActivities.length > 10 ? (
+          filteredActivities.length > 5 ? (
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => setActivitiesExpanded((v) => !v)}

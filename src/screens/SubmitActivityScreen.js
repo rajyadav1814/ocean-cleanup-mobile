@@ -23,6 +23,8 @@ import { useAuth } from '../context/AuthContext';
 import { citizenApi } from '../services/api';
 import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
 import WaveBar from '../components/citizen/WaveBar';
+import HeroWave from '../components/citizen/HeroWave';
+import WaveMark from '../components/citizen/WaveMark';
 import SelectField from '../components/citizen/SelectField';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -34,9 +36,9 @@ import SelectField from '../components/citizen/SelectField';
 const MAX_PHOTOS = 5;
 
 const STEPS = [
-  { key: 1, label: 'Site conditions' },
-  { key: 4, label: 'Hazards and evidence' },
-  { key: 6, label: 'Disposal and review' }
+  { key: 1, label: 'Site conditions', icon: 'location-outline' },
+  { key: 4, label: 'Hazards and evidence', icon: 'alert-circle-outline' },
+  { key: 6, label: 'Disposal and review', icon: 'clipboard-outline' }
 ];
 
 const SHORELINE_TYPES = ['Sandy beach', 'Rocky shore', 'Mangrove', 'Urban outfall', 'Riverbank'];
@@ -67,6 +69,31 @@ function truncateFileName(uri, maxLen = 22) {
 
 // ─── Pure sub-components ───────────────────────────────────────────────────
 
+const StepDots = React.memo(function StepDots({ t, styles, steps, activeIndex }) {
+  return (
+    <View style={styles.stepDotsRow}>
+      {steps.map((s, i) => {
+        const done = i < activeIndex;
+        const active = i === activeIndex;
+        return (
+          <React.Fragment key={s.key}>
+            <View style={styles.stepDotWrap}>
+              <View style={[styles.stepDot, (done || active) && styles.stepDotFilled, active && styles.stepDotActive]}>
+                {done ? (
+                  <Ionicons name="checkmark" size={13} color="#ffffff" />
+                ) : (
+                  <Text style={[styles.stepDotText, (done || active) && styles.stepDotTextFilled]}>{i + 1}</Text>
+                )}
+              </View>
+            </View>
+            {i < steps.length - 1 ? <View style={[styles.stepLine, done && styles.stepLineFilled]} /> : null}
+          </React.Fragment>
+        );
+      })}
+    </View>
+  );
+});
+
 const Checkbox = React.memo(function Checkbox({ t, styles, checked, label, onToggle }) {
   return (
     <TouchableOpacity style={styles.checkboxRow} activeOpacity={0.8} onPress={onToggle}>
@@ -75,6 +102,23 @@ const Checkbox = React.memo(function Checkbox({ t, styles, checked, label, onTog
       </View>
       <Text style={styles.checkboxLabel}>{label}</Text>
     </TouchableOpacity>
+  );
+});
+
+const InfoRow = React.memo(function InfoRow({ t, styles, icon, label, value, sub, last }) {
+  return (
+    <View style={[styles.infoRow, last && styles.infoRowLast]}>
+      <View style={styles.infoIconWrap}>
+        <Ionicons name={icon} size={16} color={t.primary} />
+      </View>
+      <View style={styles.infoCopy}>
+        <Text style={styles.infoLabel}>{label}</Text>
+        <Text style={styles.infoValue} numberOfLines={1}>
+          {value}
+        </Text>
+        {sub ? <Text style={styles.infoSub}>{sub}</Text> : null}
+      </View>
+    </View>
   );
 });
 
@@ -398,25 +442,48 @@ export default function SubmitActivityScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.card}>
-              <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} height={40} />
+            {/* ── Hero ── */}
+            <View style={styles.hero}>
+              <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
 
-              <View style={styles.titleRow}>
-                <Ionicons name="paper-plane-outline" size={18} color={t.primary} style={styles.titleIcon} />
-                <Text style={styles.title}>Submit Activity</Text>
+              <View style={styles.heroWaveWrap} pointerEvents="none">
+                <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
               </View>
+
+              <View style={styles.heroKicker}>
+                <Text style={styles.eyebrow}>CITIZEN REPORT</Text>
+                <WaveMark color={t.borderGlow} primary={t.primary} />
+              </View>
+
+              <View style={styles.h1Row}>
+                <Ionicons name="paper-plane-outline" size={20} color={t.primary} style={styles.h1Icon} />
+                <Text style={styles.h1}>
+                  Submit an <Text style={styles.h1Accent}>activity.</Text>
+                </Text>
+              </View>
+              <Text style={styles.heroSub}>
+                Log a cleanup or a sighting in three short steps — site conditions, hazards and evidence, then
+                disposal and review.
+              </Text>
+            </View>
+
+            {/* ── Step indicator ── */}
+            <View style={styles.stepPanel}>
+              <StepDots t={t} styles={styles} steps={STEPS} activeIndex={stepIndex} />
               <Text style={styles.stepMeta}>
                 Step {stepIndex + 1} of {STEPS.length} — {STEPS[stepIndex].label}
               </Text>
+            </View>
 
-              <View style={styles.progressRow}>
-                {STEPS.map((s, i) => (
-                  <View key={s.key} style={[styles.progressSeg, i <= stepIndex && { backgroundColor: t.primary }]} />
-                ))}
+            {message ? (
+              <View style={styles.messageBox}>
+                <Ionicons name="alert-circle-outline" size={15} color={t.danger} />
+                <Text style={styles.message}>{message}</Text>
               </View>
+            ) : null}
 
-              {message ? <Text style={styles.message}>{message}</Text> : null}
-
+            {/* ── Form card ── */}
+            <View style={styles.card}>
               {/* ── Step 1: Site conditions ── */}
               {step === 1 ? (
                 <View style={styles.stepBody}>
@@ -431,12 +498,16 @@ export default function SubmitActivityScreen() {
                     <Text style={styles.locationButtonText}>{locationButtonLabel}</Text>
                   </TouchableOpacity>
 
-                  <View style={styles.locationInfoCard}>
-                    <Text style={styles.locationInfoTitle}>📍 Detected location</Text>
-                    {form.location ? <Text style={styles.locationInfoName}>{form.location}</Text> : null}
-                    <Text style={styles.locationInfoText}>
-                      {form.latitude && form.longitude ? `${form.latitude}, ${form.longitude}` : 'Location will appear here once detected.'}
-                    </Text>
+                  <View style={styles.infoCard}>
+                    <InfoRow
+                      t={t}
+                      styles={styles}
+                      icon="location-outline"
+                      label="Detected location"
+                      value={form.location || 'Location will appear here once detected'}
+                      sub={form.latitude && form.longitude ? `${form.latitude}, ${form.longitude}` : null}
+                      last
+                    />
                   </View>
 
                   <SelectField
@@ -484,7 +555,9 @@ export default function SubmitActivityScreen() {
                       onPress={handleTakePhoto}
                       disabled={photoLimitReached}
                     >
-                      <Ionicons name="camera-outline" size={22} color={photoLimitReached ? t.textMuted : t.primary} />
+                      <View style={styles.imageButtonIconWrap}>
+                        <Ionicons name="camera-outline" size={20} color={photoLimitReached ? t.textMuted : t.primary} />
+                      </View>
                       <Text style={[styles.imageButtonText, photoLimitReached && styles.imageButtonTextDisabled]}>Open Camera</Text>
                     </TouchableOpacity>
 
@@ -494,7 +567,9 @@ export default function SubmitActivityScreen() {
                       onPress={handlePickImage}
                       disabled={photoLimitReached}
                     >
-                      <Ionicons name="images-outline" size={22} color={photoLimitReached ? t.textMuted : t.primary} />
+                      <View style={styles.imageButtonIconWrap}>
+                        <Ionicons name="images-outline" size={20} color={photoLimitReached ? t.textMuted : t.primary} />
+                      </View>
                       <Text style={[styles.imageButtonText, photoLimitReached && styles.imageButtonTextDisabled]}>Gallery Upload</Text>
                     </TouchableOpacity>
                   </View>
@@ -550,24 +625,17 @@ export default function SubmitActivityScreen() {
                     onToggle={() => setField('followUp', !form.followUp)}
                   />
 
-                  <View style={styles.summaryCard}>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Location</Text>
-                      <Text style={styles.summaryValue} numberOfLines={1}>
-                        {form.location || 'Not set'}
-                      </Text>
-                    </View>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Weight</Text>
-                      <Text style={styles.summaryValue}>{form.waste ? `${form.waste} kg` : '0 kg'}</Text>
-                    </View>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Photos attached</Text>
-                      <Text style={styles.summaryValue}>{totalImageCount}</Text>
-                    </View>
+                  <Text style={[styles.fieldLabel, { marginTop: 6 }]}>Review summary</Text>
+                  <View style={styles.infoCard}>
+                    <InfoRow t={t} styles={styles} icon="location-outline" label="Location" value={form.location || 'Not set'} />
+                    <InfoRow t={t} styles={styles} icon="scale-outline" label="Weight" value={form.waste ? `${form.waste} kg` : '0 kg'} />
+                    <InfoRow t={t} styles={styles} icon="images-outline" label="Photos attached" value={String(totalImageCount)} last />
                   </View>
 
-                  <Text style={styles.completenessLabel}>Data completeness</Text>
+                  <View style={styles.completenessRow}>
+                    <Text style={styles.completenessLabel}>Data completeness</Text>
+                    <Text style={styles.completenessPercent}>{completenessScore}%</Text>
+                  </View>
                   <View style={styles.completenessTrack}>
                     <View style={[styles.completenessFill, { width: `${completenessScore}%`, backgroundColor: t.success }]} />
                   </View>
@@ -596,6 +664,7 @@ export default function SubmitActivityScreen() {
                     <Text style={styles.nextButtonText}>
                       {isLastStep ? (loading ? 'Submitting…' : 'Submit activity') : 'Next'}
                     </Text>
+                    {!isLastStep ? <Ionicons name="arrow-forward" size={16} color="#fff" /> : null}
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -621,6 +690,143 @@ const getStyles = (t) =>
       paddingTop: 14,
       paddingBottom: 80
     },
+
+    // ── Hero ─────────────────────────────────────────────────────────────
+    hero: {
+      position: 'relative',
+      overflow: 'hidden',
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      padding: 20,
+      paddingBottom: 30,
+      marginBottom: 14
+    },
+    heroWaveWrap: {
+      position: 'absolute',
+      right: -20,
+      bottom: -18,
+      opacity: 0.5
+    },
+    heroKicker: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 12
+    },
+    eyebrow: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 10,
+      letterSpacing: 2.2,
+      opacity: 0.85
+    },
+    h1Row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8
+    },
+    h1Icon: {
+      marginTop: 2
+    },
+    h1: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sansMedium,
+      fontSize: 22,
+      lineHeight: 29,
+      letterSpacing: -0.3
+    },
+    h1Accent: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.serifItalic,
+      fontSize: 24
+    },
+    heroSub: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 13,
+      lineHeight: 20,
+      marginTop: 10,
+      maxWidth: 300
+    },
+
+    // ── Step indicator ──────────────────────────────────────────────────
+    stepPanel: {
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      marginBottom: 14
+    },
+    stepDotsRow: {
+      flexDirection: 'row',
+      alignItems: 'center'
+    },
+    stepDotWrap: {
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    stepDot: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      borderWidth: 1.5,
+      borderColor: t.borderLight,
+      backgroundColor: t.surfaceHover,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    stepDotFilled: {
+      backgroundColor: t.primary,
+      borderColor: t.primary
+    },
+    stepDotActive: {
+      borderColor: t.borderGlow
+    },
+    stepDotText: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 11.5
+    },
+    stepDotTextFilled: {
+      color: '#ffffff'
+    },
+    stepLine: {
+      flex: 1,
+      height: 2,
+      backgroundColor: t.borderLight,
+      marginHorizontal: 6
+    },
+    stepLineFilled: {
+      backgroundColor: t.primary
+    },
+    stepMeta: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 12.5,
+      marginTop: 12
+    },
+
+    messageBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: t.dangerBg,
+      borderRadius: 10,
+      padding: 10,
+      marginBottom: 14
+    },
+    message: {
+      flex: 1,
+      color: t.danger,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 12.5
+    },
+
+    // ── Form card ────────────────────────────────────────────────────────
     card: {
       position: 'relative',
       overflow: 'hidden',
@@ -629,47 +835,6 @@ const getStyles = (t) =>
       borderColor: t.borderLight,
       borderRadius: 16,
       padding: 20
-    },
-    titleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8
-    },
-    titleIcon: {
-      marginTop: 1
-    },
-    title: {
-      color: t.textMain,
-      fontFamily: CITIZEN_FONTS.sansMedium,
-      fontSize: 19,
-      letterSpacing: -0.2
-    },
-    stepMeta: {
-      color: t.textMuted,
-      fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 12.5,
-      marginTop: 4
-    },
-    progressRow: {
-      flexDirection: 'row',
-      gap: 6,
-      marginTop: 12,
-      marginBottom: 16
-    },
-    progressSeg: {
-      flex: 1,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: t.borderLight
-    },
-    message: {
-      color: t.danger,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 12.5,
-      backgroundColor: t.dangerBg,
-      borderRadius: 10,
-      padding: 10,
-      marginBottom: 14
     },
     stepBody: {
       gap: 4
@@ -728,32 +893,58 @@ const getStyles = (t) =>
       fontFamily: CITIZEN_FONTS.sansBold,
       fontSize: 13.5
     },
-    locationInfoCard: {
+
+    // ── Info card (shared: location detail + review summary) ───────────
+    infoCard: {
       backgroundColor: t.surfaceHover,
       borderRadius: 12,
       borderWidth: 1,
       borderColor: t.borderLight,
-      padding: 12,
+      paddingHorizontal: 14,
       marginBottom: 14
     },
-    locationInfoTitle: {
-      color: t.textMain,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 12.5,
-      marginBottom: 4
+    infoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: t.borderLight
     },
-    locationInfoName: {
-      color: t.textMain,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 12.5,
-      marginBottom: 4,
-      lineHeight: 17
+    infoRowLast: {
+      borderBottomWidth: 0
     },
-    locationInfoText: {
+    infoIconWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight
+    },
+    infoCopy: {
+      flex: 1
+    },
+    infoLabel: {
       color: t.textMuted,
       fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 11.5,
-      lineHeight: 17
+      fontSize: 10,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase'
+    },
+    infoValue: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 13,
+      marginTop: 2
+    },
+    infoSub: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sans,
+      fontSize: 11,
+      marginTop: 2
     },
 
     // ── Checkboxes ────────────────────────────────────────────────────────
@@ -802,13 +993,23 @@ const getStyles = (t) =>
       alignItems: 'center',
       justifyContent: 'center'
     },
+    imageButtonIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      marginBottom: 8
+    },
     imageButtonDisabled: {
       opacity: 0.45
     },
     imageButtonText: {
       color: t.textMain,
       fontFamily: CITIZEN_FONTS.sansBold,
-      marginTop: 8,
       fontSize: 12,
       textAlign: 'center'
     },
@@ -870,40 +1071,22 @@ const getStyles = (t) =>
       justifyContent: 'center'
     },
 
-    // ── Summary / completeness ───────────────────────────────────────────
-    summaryCard: {
-      backgroundColor: t.surfaceHover,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: t.borderLight,
-      padding: 14,
-      marginTop: 8,
-      marginBottom: 14
-    },
-    summaryRow: {
+    // ── Completeness ──────────────────────────────────────────────────────
+    completenessRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 4
-    },
-    summaryLabel: {
-      color: t.textMuted,
-      fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 12.5
-    },
-    summaryValue: {
-      color: t.textMain,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 12.5,
-      flexShrink: 1,
-      textAlign: 'right',
-      marginLeft: 12
+      justifyContent: 'space-between',
+      marginBottom: 8
     },
     completenessLabel: {
       color: t.textMuted,
       fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 11.5,
-      marginBottom: 8
+      fontSize: 11.5
+    },
+    completenessPercent: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 11.5
     },
     completenessTrack: {
       height: 6,
@@ -929,7 +1112,7 @@ const getStyles = (t) =>
     navRow: {
       flexDirection: 'row',
       gap: 12,
-      marginTop: 10
+      marginTop: 18
     },
     navFlex: {
       flex: 1
@@ -952,8 +1135,10 @@ const getStyles = (t) =>
       fontSize: 13.5
     },
     nextButton: {
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      gap: 8,
       paddingVertical: 13,
       borderRadius: 999
     },
