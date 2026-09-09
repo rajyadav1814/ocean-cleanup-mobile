@@ -32,6 +32,9 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { citizenApi } from '../services/api';
 import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
+import CitizenWaveBar from '../components/citizen/WaveBar';
+import HeroWave from '../components/citizen/HeroWave';
+import WaveMark from '../components/citizen/WaveMark';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 // Mirrors ocean-cleanup-frontend's QuickReport.jsx citizen flow: a fast
@@ -515,8 +518,26 @@ export default function QuickReportScreen() {
 
             {step === 'choose' ? (
               <>
-                <Text style={styles.title}>What would you like to report?</Text>
-                <Text style={styles.subtitle}>Help us keep our environment clean and healthy. Choose the best way to share what you found.</Text>
+                {/* ── Hero ── */}
+                <View style={styles.chooseHero}>
+                  <CitizenWaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+
+                  <View style={styles.chooseHeroWaveWrap} pointerEvents="none">
+                    <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+                  </View>
+
+                  <View style={styles.chooseHeroKicker}>
+                    <Text style={styles.eyebrow}>QUICK REPORT</Text>
+                    <WaveMark color={t.borderGlow} primary={t.primary} />
+                  </View>
+
+                  <Text style={styles.title}>
+                    What would you like to <Text style={styles.titleAccent}>report?</Text>
+                  </Text>
+                  <Text style={styles.subtitle}>
+                    Help us keep our environment clean and healthy — choose the best way to share what you found.
+                  </Text>
+                </View>
 
                 {/* ── Photo / Video hero ── */}
                 <View style={[styles.hero, { borderColor: withAlpha(t.secondary, 0.35), backgroundColor: withAlpha(t.secondary, 0.08) }]}>
@@ -528,13 +549,16 @@ export default function QuickReportScreen() {
 
                   <View style={styles.heroActions}>
                     <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: t.secondary }]} activeOpacity={0.85} onPress={handleTakePhoto}>
-                      <Text style={styles.btnPrimaryText}>📷 Take a photo</Text>
+                      <Ionicons name="camera" size={15} color="#fff" />
+                      <Text style={styles.btnPrimaryText}>Take a photo</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.btnOutline, { borderColor: withAlpha(t.secondary, 0.4) }]} activeOpacity={0.85} onPress={handlePickImage}>
-                      <Text style={[styles.btnOutlineText, { color: t.secondary }]}>🖼 Choose from gallery</Text>
+                      <Ionicons name="images-outline" size={15} color={t.secondary} />
+                      <Text style={[styles.btnOutlineText, { color: t.secondary }]}>Choose from gallery</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.btnOutline, { borderColor: withAlpha(t.secondary, 0.4) }]} activeOpacity={0.85} onPress={handlePickVideo}>
-                      <Text style={[styles.btnOutlineText, { color: t.secondary }]}>🎥 Add a video</Text>
+                      <Ionicons name="videocam-outline" size={15} color={t.secondary} />
+                      <Text style={[styles.btnOutlineText, { color: t.secondary }]}>Add a video</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -587,7 +611,12 @@ export default function QuickReportScreen() {
                   </View>
                 </View>
 
-                {message ? <Text style={styles.message}>{message}</Text> : null}
+                {message ? (
+                  <View style={styles.messageBox}>
+                    <Ionicons name="alert-circle-outline" size={15} color={t.danger} />
+                    <Text style={styles.messageBoxText}>{message}</Text>
+                  </View>
+                ) : null}
               </>
             ) : null}
 
@@ -897,19 +926,71 @@ const getStyles = (t) =>
       fontFamily: CITIZEN_FONTS.sansBold,
       fontSize: 11.5
     },
+    // ── Choose-step hero ─────────────────────────────────────────────────
+    chooseHero: {
+      position: 'relative',
+      overflow: 'hidden',
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      padding: 20,
+      paddingBottom: 26,
+      marginBottom: 14
+    },
+    chooseHeroWaveWrap: {
+      position: 'absolute',
+      right: -20,
+      bottom: -18,
+      opacity: 0.5
+    },
+    chooseHeroKicker: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 12
+    },
+    eyebrow: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 10,
+      letterSpacing: 2.2,
+      opacity: 0.85
+    },
     title: {
       color: t.textMain,
       fontFamily: CITIZEN_FONTS.sansMedium,
-      fontSize: 21,
-      letterSpacing: -0.3,
-      marginBottom: 6
+      fontSize: 22,
+      lineHeight: 28,
+      letterSpacing: -0.3
+    },
+    titleAccent: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.serifItalic,
+      fontSize: 24
     },
     subtitle: {
       color: t.textMuted,
       fontFamily: CITIZEN_FONTS.sans,
       fontSize: 13,
       lineHeight: 19,
-      marginBottom: 18
+      marginTop: 10,
+      maxWidth: 300
+    },
+    messageBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: t.dangerBg,
+      borderRadius: 10,
+      padding: 10,
+      marginBottom: 14
+    },
+    messageBoxText: {
+      flex: 1,
+      color: t.danger,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 12.5
     },
 
     // ── Hero (Photo/Video) ──────────────────────────────────────────────
@@ -1020,8 +1101,10 @@ const getStyles = (t) =>
 
     // ── Buttons ──────────────────────────────────────────────────────────
     btnPrimary: {
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      gap: 8,
       borderRadius: 999,
       paddingVertical: 13
     },
@@ -1031,8 +1114,10 @@ const getStyles = (t) =>
       fontSize: 13.5
     },
     btnOutline: {
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      gap: 8,
       borderRadius: 999,
       borderWidth: 1,
       paddingVertical: 13
