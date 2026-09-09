@@ -375,6 +375,7 @@ export default function MyActivityScreen() {
   const { activities, loading } = useCitizenActivities(isFocused ? 1 : 0);
   const [selectedTab, setSelectedTab] = useState('all');
   const [selectedImage, setSelectedImage] = useState(null);
+  const [activitiesExpanded, setActivitiesExpanded] = useState(false);
 
   const list = Array.isArray(activities) ? activities : [];
 
@@ -392,6 +393,12 @@ export default function MyActivityScreen() {
     () => (selectedTab === 'all' ? list : list.filter((a) => getStatus(a) === selectedTab)),
     [list, selectedTab]
   );
+
+  useEffect(() => {
+    setActivitiesExpanded(false);
+  }, [selectedTab]);
+
+  const visibleActivities = activitiesExpanded ? filteredActivities : filteredActivities.slice(0, 10);
 
   const closeImagePreview = useCallback(() => setSelectedImage(null), []);
   const handleImagePress = useCallback((item) => {
@@ -425,7 +432,7 @@ export default function MyActivityScreen() {
         removeClippedSubviews={false}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        data={filteredActivities}
+        data={visibleActivities}
         keyExtractor={(item, i) => item?.id?.toString() || item?._id || String(item?.activityId) || String(i)}
         renderItem={({ item }) => <ActivityCard item={item} t={t} styles={styles} onImagePress={handleImagePress} />}
         ListHeaderComponent={
@@ -489,6 +496,18 @@ export default function MyActivityScreen() {
               </View>
             ) : null}
           </>
+        }
+        ListFooterComponent={
+          filteredActivities.length > 10 ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setActivitiesExpanded((v) => !v)}
+              style={styles.activityToggle}
+            >
+              <Text style={styles.activityToggleText}>{activitiesExpanded ? 'Hide' : 'Show more'}</Text>
+              <Ionicons name={activitiesExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={t.primary} />
+            </TouchableOpacity>
+          ) : null
         }
         ListEmptyComponent={
           list.length === 0 ? (
@@ -825,6 +844,19 @@ const getStyles = (t) =>
       fontFamily: CITIZEN_FONTS.sans,
       fontSize: 11.5,
       lineHeight: 16,
+    },
+    activityToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      paddingVertical: 14,
+      marginBottom: 8,
+    },
+    activityToggleText: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 12.5,
     },
     empty: {
       alignItems: 'center',

@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -116,6 +116,7 @@ export default function DashboardScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const { user } = useAuth();
+  const [feedExpanded, setFeedExpanded] = useState(false);
   const { mode } = useTheme();
   const t = useMemo(() => getCitizenTheme(mode), [mode]);
   const styles = useMemo(() => getStyles(t), [t]);
@@ -282,7 +283,25 @@ export default function DashboardScreen() {
               {feed.length === 0 ? (
                 <Text style={styles.emptyText}>No reports yet — be the first!</Text>
               ) : (
-                feed.slice(0, 6).map((item, i) => <FeedRow key={item.id || i} item={item} t={t} styles={styles} />)
+                <>
+                  {(feedExpanded ? feed.slice(0, 6) : feed.slice(0, 2)).map((item, i) => (
+                    <FeedRow key={item.id || i} item={item} t={t} styles={styles} />
+                  ))}
+                  {feed.length > 2 ? (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setFeedExpanded((v) => !v)}
+                      style={styles.feedToggle}
+                    >
+                      <Text style={styles.feedToggleText}>{feedExpanded ? 'Hide' : 'Show more'}</Text>
+                      <Ionicons
+                        name={feedExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={14}
+                        color={t.primary}
+                      />
+                    </TouchableOpacity>
+                  ) : null}
+                </>
               )}
             </Panel>
 
@@ -540,6 +559,18 @@ const getStyles = (t) =>
       color: t.textMuted,
       fontFamily: CITIZEN_FONTS.sans,
       fontSize: 11,
+    },
+    feedToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      paddingVertical: 12,
+    },
+    feedToggleText: {
+      color: t.primary,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 12.5,
     },
     badgeGrid: {
       flexDirection: 'row',
