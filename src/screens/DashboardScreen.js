@@ -13,7 +13,7 @@ import StatusPill from '../components/citizen/StatusPill';
 import WaveMark from '../components/citizen/WaveMark';
 import HeroWave from '../components/citizen/HeroWave';
 import WaveBar from '../components/citizen/WaveBar';
-import OceanCreatures from '../components/citizen/OceanCreatures';
+// import OceanCreatures from '../components/citizen/OceanCreatures';
 import DashboardSkeleton from '../components/DashboardSkeleton';
 
 function memberSince(ts) {
@@ -178,7 +178,7 @@ export default function DashboardScreen() {
               <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
 
               <View style={styles.creaturesWrap} pointerEvents="none">
-                <OceanCreatures primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+                {/* <OceanCreatures primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} /> */}
               </View>
 
               <View style={styles.heroWaveWrap} pointerEvents="none">
@@ -241,7 +241,7 @@ export default function DashboardScreen() {
               <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
 
               <View style={styles.creaturesWrap} pointerEvents="none">
-                <OceanCreatures primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
+                {/* <OceanCreatures primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} /> */}
               </View>
 
               <View style={styles.heroWaveWrap} pointerEvents="none">
