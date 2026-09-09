@@ -504,7 +504,7 @@ export default function MyActivityScreen() {
               onPress={() => setActivitiesExpanded((v) => !v)}
               style={styles.activityToggle}
             >
-              <Text style={styles.activityToggleText}>{activitiesExpanded ? 'Hide' : 'Show more'}</Text>
+              <Text style={styles.activityToggleText}>{activitiesExpanded ? 'Show less' : 'Show more'}</Text>
               <Ionicons name={activitiesExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={t.primary} />
             </TouchableOpacity>
           ) : null

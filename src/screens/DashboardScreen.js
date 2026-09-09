@@ -293,7 +293,7 @@ export default function DashboardScreen() {
                       onPress={() => setFeedExpanded((v) => !v)}
                       style={styles.feedToggle}
                     >
-                      <Text style={styles.feedToggleText}>{feedExpanded ? 'Hide' : 'Show more'}</Text>
+                      <Text style={styles.feedToggleText}>{feedExpanded ? 'Show less' : 'Show more'}</Text>
                       <Ionicons
                         name={feedExpanded ? 'chevron-up' : 'chevron-down'}
                         size={14}
