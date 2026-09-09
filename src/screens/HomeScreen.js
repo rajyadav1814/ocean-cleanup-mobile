@@ -6,6 +6,35 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
 
+// ─── Pure sub-components ───────────────────────────────────────────────────
+
+const StatPill = React.memo(function StatPill({ styles, icon, color, label }) {
+  return (
+    <View style={styles.statPill}>
+      <Ionicons name={icon} size={12} color={color} />
+      <Text style={styles.statPillText}>{label}</Text>
+    </View>
+  );
+});
+
+const SettingsRow = React.memo(function SettingsRow({ t, styles, icon, iconColor, iconBg, label, onPress, last, children }) {
+  const Wrapper = onPress ? TouchableOpacity : View;
+  return (
+    <Wrapper
+      style={[styles.settingsRow, last && styles.settingsRowLast]}
+      activeOpacity={onPress ? 0.7 : undefined}
+      onPress={onPress}
+    >
+      <View style={[styles.settingsIconWrap, iconBg && { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={16} color={iconColor || t.primary} />
+      </View>
+      <Text style={styles.settingsLabel}>{label}</Text>
+      <View style={styles.settingsAccessory}>{children}</View>
+      {onPress ? <Ionicons name="chevron-forward" size={16} color={t.textMuted} style={{ marginLeft: 4 }} /> : null}
+    </Wrapper>
+  );
+});
+
 export default function HomeScreen({ navigation }) {
   const { user, logout } = useAuth();
   const { mode, setMode } = useTheme();
@@ -28,93 +57,86 @@ export default function HomeScreen({ navigation }) {
   return (
     <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* ── Profile card ── */}
-        <View style={styles.card}>
-          <View style={styles.profileHeader}>
-            <View style={styles.avatar}>
-              {user?.profileImageUrl ? (
-                <Image source={{ uri: user.profileImageUrl }} style={styles.avatarImage} />
-              ) : (
-                <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarFallback}>
-                  <Text style={styles.avatarText}>{user?.displayInitial || 'U'}</Text>
-                </LinearGradient>
-              )}
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.name}>{user?.displayName || 'Citizen'}</Text>
-              <Text style={styles.role}>{user?.jobTitle ? user.jobTitle : user?.role || 'Community Member'}</Text>
-              <View style={styles.metaRow}>
-                <View style={styles.metaChip}>
-                  <Ionicons name="person-circle-outline" size={12} color={t.primary} />
-                  <Text style={styles.metaChipText}>{accountLabel}</Text>
-                </View>
-                <View style={styles.metaChip}>
-                  <Ionicons name="time-outline" size={12} color={t.primary} />
-                  <Text style={styles.metaChipText}>Since {memberSince}</Text>
-                </View>
-              </View>
-            </View>
-            <TouchableOpacity onPress={() => navigation.navigate('ProfileSettings')} style={styles.editButton} activeOpacity={0.75}>
-              <Ionicons name="pencil-outline" size={18} color={t.textMuted} />
+        {/* ── Cover banner + overlapping avatar ── */}
+        <View style={styles.bannerWrap}>
+          <LinearGradient colors={[t.secondary, t.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.banner}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ProfileSettings')}
+              style={styles.bannerEditButton}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="pencil-outline" size={15} color="#ffffff" />
+              <Text style={styles.bannerEditText}>Edit</Text>
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
 
-          <View style={styles.infoList}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Email</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>
-                {user?.email || 'Not available'}
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Account</Text>
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="shield-checkmark" size={13} color={t.success} style={{ marginRight: 4 }} />
-                <Text style={styles.verifiedBadgeText}>Verified</Text>
-              </View>
-            </View>
+          <View style={styles.avatarRing}>
+            {user?.profileImageUrl ? (
+              <Image source={{ uri: user.profileImageUrl }} style={styles.avatarImage} />
+            ) : (
+              <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarFallback}>
+                <Text style={styles.avatarText}>{user?.displayInitial || 'U'}</Text>
+              </LinearGradient>
+            )}
           </View>
         </View>
 
-        {/* ── Appearance card ── */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
-          <Text style={styles.sectionText}>Choose the theme that feels best for you.</Text>
+        <View style={styles.identityBlock}>
+          <Text style={styles.name}>{user?.displayName || 'Citizen'}</Text>
+          <Text style={styles.role}>{user?.jobTitle ? user.jobTitle : user?.role || 'Community Member'}</Text>
 
-          <View style={styles.toggleRow}>
-            <TouchableOpacity activeOpacity={0.85} onPress={() => setMode('light')} style={styles.toggleWrap}>
-              {mode === 'light' ? (
-                <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.toggleButton}>
-                  <Ionicons name="sunny" size={17} color="#ffffff" style={{ marginBottom: 4 }} />
-                  <Text style={styles.toggleTextActive}>Light</Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.toggleButton}>
-                  <Ionicons name="sunny" size={17} color={t.textMuted} style={{ marginBottom: 4 }} />
-                  <Text style={styles.toggleText}>Light</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity activeOpacity={0.85} onPress={() => setMode('dark')} style={styles.toggleWrap}>
-              {mode === 'dark' ? (
-                <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.toggleButton}>
-                  <Ionicons name="moon" size={17} color="#ffffff" style={{ marginBottom: 4 }} />
-                  <Text style={styles.toggleTextActive}>Dark</Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.toggleButton}>
-                  <Ionicons name="moon" size={17} color={t.textMuted} style={{ marginBottom: 4 }} />
-                  <Text style={styles.toggleText}>Dark</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+          <View style={styles.statsRow}>
+            <StatPill styles={styles} icon="person-circle-outline" color={t.primary} label={accountLabel} />
+            <StatPill styles={styles} icon="time-outline" color={t.primary} label={`Since ${memberSince}`} />
+            <StatPill styles={styles} icon="shield-checkmark" color={t.success} label="Verified" />
           </View>
-          <Text style={styles.themeHint}>The theme follows your mood, but your data stays the same either way.</Text>
         </View>
 
-        <TouchableOpacity style={styles.signOutButton} activeOpacity={0.85} onPress={() => setLogoutModalVisible(true)}>
-          <Ionicons name="log-out-outline" size={16} color={t.danger} />
+        {/* ── Grouped settings list ── */}
+        <Text style={styles.groupLabel}>ACCOUNT</Text>
+        <View style={styles.group}>
+          <SettingsRow t={t} styles={styles} icon="mail-outline" label="Email">
+            <Text style={styles.settingsValue} numberOfLines={1}>
+              {user?.email || 'Not available'}
+            </Text>
+          </SettingsRow>
+          <SettingsRow
+            t={t}
+            styles={styles}
+            icon="create-outline"
+            label="Edit profile"
+            onPress={() => navigation.navigate('ProfileSettings')}
+            last
+          />
+        </View>
+
+        <Text style={styles.groupLabel}>APPEARANCE</Text>
+        <View style={styles.group}>
+          <SettingsRow t={t} styles={styles} icon="contrast-outline" label="Theme" last>
+            <View style={styles.segmented}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setMode('light')}
+                style={[styles.segmentBtn, mode === 'light' && { backgroundColor: t.primary }]}
+              >
+                <Ionicons name="sunny" size={13} color={mode === 'light' ? '#ffffff' : t.textMuted} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setMode('dark')}
+                style={[styles.segmentBtn, mode === 'dark' && { backgroundColor: t.primary }]}
+              >
+                <Ionicons name="moon" size={13} color={mode === 'dark' ? '#ffffff' : t.textMuted} />
+              </TouchableOpacity>
+            </View>
+          </SettingsRow>
+        </View>
+        <Text style={styles.groupHint}>The theme follows your mood — your data stays the same either way.</Text>
+
+        <TouchableOpacity style={styles.signOutRow} activeOpacity={0.7} onPress={() => setLogoutModalVisible(true)}>
+          <View style={[styles.settingsIconWrap, { backgroundColor: t.dangerBg }]}>
+            <Ionicons name="log-out-outline" size={16} color={t.danger} />
+          </View>
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -149,24 +171,41 @@ const getStyles = (t) =>
       paddingTop: 14,
       paddingBottom: 120
     },
-    card: {
-      backgroundColor: t.surface,
-      borderWidth: 1,
-      borderColor: t.borderLight,
-      borderRadius: 16,
-      padding: 18,
-      marginBottom: 14
+
+    // ── Banner + avatar ─────────────────────────────────────────────────
+    bannerWrap: {
+      marginBottom: 52
     },
-    profileHeader: {
+    banner: {
+      height: 120,
+      borderRadius: 20,
+      padding: 14,
+      alignItems: 'flex-end'
+    },
+    bannerEditButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 16
+      gap: 6,
+      backgroundColor: 'rgba(4,18,31,0.28)',
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 7
     },
-    avatar: {
-      width: 68,
-      height: 68,
-      borderRadius: 20,
-      overflow: 'hidden'
+    bannerEditText: {
+      color: '#ffffff',
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 11.5
+    },
+    avatarRing: {
+      position: 'absolute',
+      left: 18,
+      bottom: -44,
+      width: 92,
+      height: 92,
+      borderRadius: 26,
+      overflow: 'hidden',
+      borderWidth: 4,
+      borderColor: t.pageBg
     },
     avatarFallback: {
       flex: 1,
@@ -180,159 +219,149 @@ const getStyles = (t) =>
     avatarText: {
       color: '#ffffff',
       fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 26
+      fontSize: 32
     },
-    profileInfo: {
-      flex: 1,
-      marginLeft: 14
+
+    // ── Identity block ───────────────────────────────────────────────────
+    identityBlock: {
+      marginBottom: 24
     },
     name: {
       color: t.textMain,
       fontFamily: CITIZEN_FONTS.sansMedium,
-      fontSize: 17,
-      letterSpacing: -0.2
+      fontSize: 21,
+      letterSpacing: -0.3
     },
     role: {
       color: t.textMuted,
       fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 12.5,
+      fontSize: 13,
       marginTop: 3
     },
-    metaRow: {
+    statsRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: 8,
-      marginTop: 10
+      marginTop: 12
     },
-    metaChip: {
+    statPill: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 5,
       paddingHorizontal: 10,
-      paddingVertical: 5,
+      paddingVertical: 6,
       borderRadius: 999,
-      backgroundColor: t.surfaceHover,
+      backgroundColor: t.surface,
       borderWidth: 1,
       borderColor: t.borderLight
     },
-    metaChipText: {
+    statPillText: {
       color: t.textMuted,
       fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 10.5
+      fontSize: 10.5,
+      textTransform: 'capitalize'
     },
-    editButton: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
+
+    // ── Grouped settings list ────────────────────────────────────────────
+    groupLabel: {
+      color: t.textMuted,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 10.5,
+      letterSpacing: 1.2,
+      marginBottom: 8,
+      marginLeft: 4
+    },
+    group: {
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      marginBottom: 18,
+      overflow: 'hidden'
+    },
+    settingsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 13,
+      borderBottomWidth: 1,
+      borderBottomColor: t.borderLight
+    },
+    settingsRowLast: {
+      borderBottomWidth: 0
+    },
+    settingsIconWrap: {
+      width: 30,
+      height: 30,
+      borderRadius: 9,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: t.surfaceHover,
-      borderWidth: 1,
-      borderColor: t.borderLight
+      backgroundColor: t.surfaceHover
     },
-    infoList: {
-      borderTopWidth: 1,
-      borderTopColor: t.borderLight,
-      paddingTop: 12
-    },
-    infoRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 10
-    },
-    infoLabel: {
-      color: t.textMuted,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 12.5
-    },
-    infoValue: {
+    settingsLabel: {
       color: t.textMain,
       fontFamily: CITIZEN_FONTS.sansMedium,
-      fontSize: 12.5,
+      fontSize: 13.5,
+      flexShrink: 0
+    },
+    settingsAccessory: {
       flex: 1,
-      textAlign: 'right',
-      marginLeft: 12
+      alignItems: 'flex-end'
     },
-    verifiedBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: 'rgba(46,158,155,0.14)',
-      borderRadius: 999,
-      paddingHorizontal: 10,
-      paddingVertical: 4
-    },
-    verifiedBadgeText: {
-      color: t.success,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 11
-    },
-    sectionTitle: {
-      color: t.textMain,
-      fontFamily: CITIZEN_FONTS.sansMedium,
-      fontSize: 16,
-      letterSpacing: -0.2,
-      marginBottom: 4
-    },
-    sectionText: {
+    settingsValue: {
       color: t.textMuted,
       fontFamily: CITIZEN_FONTS.sans,
       fontSize: 12.5,
-      lineHeight: 18,
-      marginBottom: 14
+      textAlign: 'right'
     },
-    themeHint: {
+    groupHint: {
       color: t.textMuted,
       fontFamily: CITIZEN_FONTS.sans,
       fontSize: 11.5,
-      lineHeight: 17,
-      marginTop: 12
+      lineHeight: 16,
+      marginTop: -10,
+      marginBottom: 18,
+      marginLeft: 4
     },
-    toggleRow: {
+
+    // ── Theme segmented control ─────────────────────────────────────────
+    segmented: {
       flexDirection: 'row',
-      gap: 10
-    },
-    toggleWrap: {
-      flex: 1,
-      borderRadius: 14,
-      overflow: 'hidden'
-    },
-    toggleButton: {
-      flex: 1,
-      paddingVertical: 14,
+      gap: 6,
       backgroundColor: t.surfaceHover,
-      borderRadius: 14,
+      borderRadius: 999,
+      padding: 3,
       borderWidth: 1,
-      borderColor: t.borderLight,
+      borderColor: t.borderLight
+    },
+    segmentBtn: {
+      width: 28,
+      height: 28,
+      borderRadius: 999,
       alignItems: 'center',
       justifyContent: 'center'
     },
-    toggleText: {
-      color: t.textMuted,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 12.5
-    },
-    toggleTextActive: {
-      color: '#ffffff',
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 12.5
-    },
-    signOutButton: {
+
+    // ── Sign out ──────────────────────────────────────────────────────────
+    signOutRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      borderRadius: 16,
+      gap: 12,
+      backgroundColor: t.surface,
       borderWidth: 1,
-      borderColor: 'rgba(239,68,68,0.35)',
-      height: 52,
-      marginTop: 4
+      borderColor: t.borderLight,
+      borderRadius: 16,
+      paddingHorizontal: 14,
+      paddingVertical: 13
     },
     signOutText: {
       color: t.danger,
       fontFamily: CITIZEN_FONTS.sansBold,
       fontSize: 13.5
     },
+
+    // ── Logout modal ──────────────────────────────────────────────────────
     modalOverlay: {
       flex: 1,
       justifyContent: 'center',
