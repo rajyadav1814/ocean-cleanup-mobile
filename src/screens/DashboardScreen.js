@@ -1,20 +1,25 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import React, { memo, useCallback, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useCitizenStats, useCitizenLeaderboard, useCitizenFeed } from '../services/citizenHooks';
+import {
+  useCitizenStats, useCitizenLeaderboard, useCitizenFeed, useCitizenStories, useMyEvents,
+} from '../services/citizenHooks';
 import { formatTimeAgo } from '../utils/formatTime';
 import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
 import Panel from '../components/citizen/Panel';
-import StatusPill from '../components/citizen/StatusPill';
-import WaveMark from '../components/citizen/WaveMark';
-import HeroWave from '../components/citizen/HeroWave';
-import WaveBar from '../components/citizen/WaveBar';
-// import OceanCreatures from '../components/citizen/OceanCreatures';
 import DashboardSkeleton from '../components/DashboardSkeleton';
+import BlueMindHero from '../components/citizen/BlueMindHero';
+import ValuesStrip from '../components/citizen/ValuesStrip';
+import LifecycleStrip from '../components/citizen/LifecycleStrip';
+import NeedsAttention from '../components/citizen/NeedsAttention';
+import ImpactStories from '../components/citizen/ImpactStories';
+import {
+  eventStateMeta, verificationStateMeta, primarySubjectLabel, isNeedsAttention,
+} from '../utils/eventMeta';
 
 function memberSince(ts) {
   if (!ts) return 'recently';
@@ -64,49 +69,37 @@ const LeaderboardRow = memo(function LeaderboardRow({ row, styles }) {
 
 const FeedRow = memo(function FeedRow({ item, t, styles }) {
   const name = `${item.firstName || ''} ${item.lastName?.[0] ? item.lastName[0] + '.' : ''}`.trim();
+  // Every report is an event, and not every event is a cleanup — a wildlife
+  // sighting or a water reading is described by its own subject rather than
+  // as "a cleanup", which is what this said for all of them.
+  const subjectLabel = primarySubjectLabel(item.subjects, 'an issue');
+  const stateMeta = eventStateMeta(item.eventState);
+  const verMeta = verificationStateMeta(item.verificationState);
+  // Informational only — the feed reports what the community is seeing, it
+  // is not a way into those events, so no press handler and no chevron.
   return (
     <View style={styles.feedRow}>
       <Text style={styles.feedTime}>{formatTimeAgo(item.submittedAt)}</Text>
       <View style={styles.feedContent}>
         <Text style={styles.feedText}>
-          <Text style={styles.feedName}>{name}</Text> logged a cleanup at {item.location}
+          <Text style={styles.feedName}>{name}</Text> reported {subjectLabel.toLowerCase()}
+          {item.location ? ` at ${item.location}` : ''}
         </Text>
         <View style={styles.feedMeta}>
           {item.quantity > 0 ? <Text style={styles.feedMetaText}>{item.quantity} kg</Text> : null}
           {item.volunteers > 0 ? <Text style={styles.feedMetaText}>· {item.volunteers} vol.</Text> : null}
-          <StatusPill t={t} item={item} />
+          {/* The event model's own two axes (spec §12) rather than one
+              flattened approved/pending/rejected pill: an event can be
+              addressed and still unverified. */}
+          <View style={[styles.feedPill, { backgroundColor: `${stateMeta.color}22` }]}>
+            <Text style={[styles.feedPillText, { color: stateMeta.color }]}>{stateMeta.label}</Text>
+          </View>
+          <View style={[styles.feedPill, { backgroundColor: verMeta.color }]}>
+            <Text style={[styles.feedPillText, { color: '#fff' }]}>{verMeta.label}</Text>
+          </View>
         </View>
       </View>
     </View>
-  );
-});
-
-const WavingHand = memo(function WavingHand({ color, size, style }) {
-  const rotate = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const wave = Animated.loop(
-      Animated.sequence([
-        Animated.timing(rotate, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.timing(rotate, { toValue: -1, duration: 350, useNativeDriver: true }),
-        Animated.timing(rotate, { toValue: 1, duration: 350, useNativeDriver: true }),
-        Animated.timing(rotate, { toValue: 0, duration: 200, useNativeDriver: true }),
-        Animated.delay(1200),
-      ])
-    );
-    wave.start();
-    return () => wave.stop();
-  }, [rotate]);
-
-  const rotateInterpolate = rotate.interpolate({
-    inputRange: [-1, 1],
-    outputRange: ['-25deg', '25deg'],
-  });
-
-  return (
-    <Animated.View style={[style, { transform: [{ rotate: rotateInterpolate }] }]}>
-      <Ionicons name="hand-left-outline" size={size} color={color} />
-    </Animated.View>
   );
 });
 
@@ -117,6 +110,12 @@ export default function DashboardScreen() {
   const isFocused = useIsFocused();
   const { user } = useAuth();
   const [feedExpanded, setFeedExpanded] = useState(false);
+  // Opens the read-only event record. Lives in the Dashboard stack, so the
+  // tab bar stays put and Back returns here.
+  const openEvent = useCallback(
+    (eventId) => { if (eventId) navigation.navigate('EventDetail', { eventId }); },
+    [navigation]
+  );
   const { mode } = useTheme();
   const t = useMemo(() => getCitizenTheme(mode), [mode]);
   const styles = useMemo(() => getStyles(t), [t]);
@@ -125,7 +124,9 @@ export default function DashboardScreen() {
   const { stats, loading: statsLoading } = useCitizenStats(refresh);
   const { leaderboard, myRow, loading: leaderboardLoading } = useCitizenLeaderboard(refresh);
   const { feed, loading: feedLoading } = useCitizenFeed(6, refresh);
-  const loading = statsLoading || leaderboardLoading || feedLoading;
+  const { events: myEvents, loading: eventsLoading } = useMyEvents(user?.id, refresh);
+  const { stories, loading: storiesLoading } = useCitizenStories(3, refresh);
+  const loading = statsLoading || leaderboardLoading || feedLoading || eventsLoading || storiesLoading;
 
   const s = stats || {};
   const firstName = user?.firstName || user?.displayName?.split(' ')[0] || 'there';
@@ -138,6 +139,41 @@ export default function DashboardScreen() {
   const showMyRow = myRow && !lbRows.some((r) => r.isMe);
   const allRows = useMemo(() => lbRows.concat(showMyRow ? [myRow] : []), [lbRows, showMyRow, myRow]);
   const sinceLabel = memberSince(s.memberSince);
+
+  // Environmental events tied to this citizen's own reports (spec §22):
+  // what's still open, separate from the community feed, which shows
+  // everyone's activity rather than "what happened because of me".
+  const needsAttention = useMemo(
+    () => [...(myEvents || [])]
+      .filter(isNeedsAttention)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
+    [myEvents]
+  );
+
+  // Hero "what changed since you were last here" (spec §15) — the same
+  // priority order the web spaces use (resolved > verified > corroborated),
+  // so all three clients tell the same concrete story instead of a static
+  // thank-you. Returns null when nothing qualifies, and the hero falls back
+  // to its own copy rather than dressing up an absence.
+  const heroUpdate = useMemo(() => {
+    const list = myEvents || [];
+    if (!list.length) return null;
+    const byRecency = [...list].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    const subjectLabelFor = (e) => e.subjects?.[0]?.label || 'issue';
+
+    const resolved = byRecency.find((e) => e.eventState === 'addressed');
+    if (resolved) return `the ${subjectLabelFor(resolved)} you reported is resolved.`;
+
+    const verified = byRecency.find((e) => e.verificationState === 'verified');
+    if (verified) return 'one of your reports was verified.';
+
+    const corroborated = byRecency.find((e) => e.corroborationCount > 0);
+    if (corroborated) {
+      const n = corroborated.corroborationCount;
+      return `${n} other ${n === 1 ? 'person has' : 'people have'} confirmed what you saw.`;
+    }
+    return null;
+  }, [myEvents]);
 
   const statItems = useMemo(
     () => [
@@ -172,111 +208,65 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* ── Hero ── the same Blue Mind hero the web Citizen Space uses.
+            One hero for new and returning citizens alike, exactly as on
+            web: only the content *below* it changes. */}
+        <BlueMindHero
+          t={t}
+          mode={mode}
+          firstName={firstName}
+          heroUpdate={heroUpdate}
+          jobTitle={user?.jobTitle}
+          onContribute={() => navigation.navigate('Submit')}
+        />
+
+        {/* ── Community values + lifecycle ── shown to every citizen,
+            including brand-new ones: they explain what the space is for,
+            which is most useful before there is any data. */}
+        <ValuesStrip t={t} />
+        <LifecycleStrip t={t} />
+
         {isNewCitizen ? (
-          <>
-            <View style={styles.hero}>
-              <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
-
-              <View style={styles.creaturesWrap} pointerEvents="none">
-                {/* <OceanCreatures primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} /> */}
-              </View>
-
-              <View style={styles.heroWaveWrap} pointerEvents="none">
-                <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
-              </View>
-
-              <View style={styles.heroKicker}>
-                <Text style={styles.eyebrow}>CITIZEN SPACE</Text>
-                <WaveMark color={t.borderGlow} primary={t.primary} />
-              </View>
-
-              <View style={styles.h1Row}>
-                <WavingHand color={t.primary} size={20} style={styles.h1Icon} />
-                <Text style={styles.h1}>
-                  Welcome back, {firstName} {lastName}
-                </Text>
-              </View>
-              <Text style={styles.heroSub}>
-                No reports submitted recently — your next report can help update the community map and pinpoint emerging pollution hotspots.
-              </Text>
-
-              <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
-                <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
-                  <Text style={styles.ctaText}>Submit Activity</Text>
-                  <Text style={styles.ctaArrow}>→</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+          <View style={styles.newUserCard}>
+            <View style={styles.newUserIconWrap}>
+              <LinearGradient
+                colors={[t.primary, t.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.newUserIcon}
+              >
+                <Text style={styles.newUserIconText}>▣</Text>
+              </LinearGradient>
             </View>
 
-            <View style={styles.newUserCard}>
-              <View style={styles.newUserIconWrap}>
-                <LinearGradient
-                  colors={[t.primary, t.secondary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.newUserIcon}
-                >
-                  <Text style={styles.newUserIconText}>▣</Text>
-                </LinearGradient>
-              </View>
+            <Text style={styles.newUserTitle}>Submit your first report to unlock your activity feed</Text>
+            <Text style={styles.newUserDesc}>
+              Once your first report is logged, this space fills in with the community feed, your badges, and where
+              you rank among nearby citizens.
+            </Text>
 
-              <Text style={styles.newUserTitle}>Submit your first report to unlock your activity feed</Text>
-              <Text style={styles.newUserDesc}>
-                Once your first report is logged, this space fills in with the community feed, your badges, and where
-                you rank among nearby citizens.
-              </Text>
-
-              <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.newUserCtaWrap}>
-                <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
-                  <Text style={styles.ctaText}>Submit Activity</Text>
-                  <Text style={styles.ctaArrow}>→</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </>
+            <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.newUserCtaWrap}>
+              <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
+                <Text style={styles.ctaText}>Submit Activity</Text>
+                <Text style={styles.ctaArrow}>→</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         ) : (
           <>
-            {/* ── Hero ── */}
-            <View style={styles.hero}>
-              <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
-
-              <View style={styles.creaturesWrap} pointerEvents="none">
-                {/* <OceanCreatures primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} /> */}
-              </View>
-
-              <View style={styles.heroWaveWrap} pointerEvents="none">
-                <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
-              </View>
-
-              <View style={styles.heroKicker}>
-                <Text style={styles.eyebrow}>CITIZEN SPACE</Text>
-                <WaveMark color={t.borderGlow} primary={t.primary} />
-              </View>
-
-              <View style={styles.h1Row}>
-                <WavingHand color={t.primary} size={20} style={styles.h1Icon} />
-                <Text style={styles.h1}>
-                  Welcome back, {firstName} {lastName}
-                </Text>
-              </View>
-              <Text style={styles.heroSub}>
-                You've submitted {totalReports} report{totalReports !== 1 ? 's' : ''} since {sinceLabel}. Each one feeds the community map that shows where pollution is building up.
-              </Text>
-
-              <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
-                <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cta}>
-                  <Text style={styles.ctaText}>Submit Activity</Text>
-                  <Text style={styles.ctaArrow}>→</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-
             {/* ── Stats ── */}
             <View style={styles.statsGrid}>
               {statItems.map((item) => (
                 <StatCard key={item.label} t={t} styles={styles} {...item} />
               ))}
             </View>
+
+            {/* ── Needs Attention ── the citizen's own open events ── */}
+            <NeedsAttention t={t} events={needsAttention} onOpenEvent={openEvent} />
+
+            {/* ── What Changed Because of You (spec §4) ── the full outcome
+                chain, not its endpoint ── */}
+            <ImpactStories t={t} stories={stories} onOpenEvent={openEvent} />
 
             {/* ── Community feed ── */}
             <Panel t={t} kicker="Community Feed" title="Latest reports" desc="Real-time submissions from citizens near you.">
@@ -342,70 +332,6 @@ const getStyles = (t) =>
       paddingHorizontal: 16,
       paddingTop: 14,
       paddingBottom: 80,
-    },
-    hero: {
-      position: 'relative',
-      overflow: 'hidden',
-      backgroundColor: t.surface,
-      borderWidth: 1,
-      borderColor: t.borderLight,
-      borderRadius: 16,
-      padding: 20,
-      paddingBottom: 66,
-      marginBottom: 14,
-    },
-    heroWaveWrap: {
-      position: 'absolute',
-      right: -20,
-      bottom: -18,
-      opacity: 0.5,
-    },
-    creaturesWrap: {
-      ...StyleSheet.absoluteFillObject,
-    },
-    heroKicker: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      marginBottom: 12,
-    },
-    eyebrow: {
-      color: t.primary,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 10,
-      letterSpacing: 2.2,
-      opacity: 0.85,
-    },
-    h1Row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    h1Icon: {
-      marginTop: 2,
-    },
-    h1: {
-      color: t.textMain,
-      fontFamily: CITIZEN_FONTS.sansMedium,
-      fontSize: 22,
-      lineHeight: 29,
-      letterSpacing: -0.3,
-    },
-    h1Accent: {
-      color: t.primary,
-      fontFamily: CITIZEN_FONTS.serifItalic,
-      fontSize: 24,
-    },
-    heroSub: {
-      color: t.textMuted,
-      fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 13,
-      lineHeight: 20,
-      marginTop: 10,
-    },
-    ctaWrap: {
-      marginTop: 18,
-      alignSelf: 'flex-start',
     },
     cta: {
       flexDirection: 'row',
@@ -559,6 +485,20 @@ const getStyles = (t) =>
       color: t.textMuted,
       fontFamily: CITIZEN_FONTS.sans,
       fontSize: 11,
+    },
+    // Event-state / verification pills. Same shape as the old StatusPill,
+    // but the colour is passed in per state rather than chosen from the
+    // three legacy variants, so all ten event states can render.
+    feedPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 2.5,
+      borderRadius: 20,
+    },
+    feedPillText: {
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 9.5,
+      letterSpacing: 0.4,
+      textTransform: 'uppercase',
     },
     feedToggle: {
       flexDirection: 'row',

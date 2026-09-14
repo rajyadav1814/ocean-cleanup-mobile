@@ -135,6 +135,17 @@ export const citizenApi = {
   getLeaderboard: () => apiGet('/api/citizen/leaderboard'),
   getFeed: (limit = 15) => apiGet(`/api/citizen/feed?limit=${limit}`),
   getActivities: () => apiGet('/api/citizen/activities'),
+  // spec §4: full outcome chains for "What Changed Because of You" — who
+  // else saw it, how reports merged, who acted, what changed, who verified.
+  getStories: (limit = 3) => apiGet(`/api/citizen/stories?limit=${limit}`),
+  // The citizen's own environmental events (spec §22), scoped server-side
+  // rather than pulling the whole list and filtering on device. Backs
+  // "Needs Attention" and the hero's "what changed while you were away".
+  getMyEvents: (contributorId, limit = 200) =>
+    apiGet(`/api/events?limit=${limit}&contributorId=${encodeURIComponent(contributorId)}`),
+  // One event with its full detail: subjects, evidence, measurements,
+  // relationships, verifications, impact and state history.
+  getEvent: (eventId) => apiGet(`/api/events/${encodeURIComponent(eventId)}`),
   getOrganizations: () => apiGet('/api/dashboard/organizations'),
   analyzeImage: (payload) => apiPost('/api/ai/analyze-image', payload),
   submitReport: (formData) => apiPost('/api/activities', formData),

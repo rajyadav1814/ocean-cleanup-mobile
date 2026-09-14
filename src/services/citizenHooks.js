@@ -119,6 +119,34 @@ export function useCitizenActivities(refresh = 0) {
   return { activities, loading };
 }
 
+// Top outcome chains for "What Changed Because of You" (spec §4). Its own
+// endpoint rather than more columns on the events list: the acting-org and
+// verifier joins are only worth paying for on the handful rendered.
+export function useCitizenStories(limit = 3, refresh = 0) {
+  const { data: stories, loading } = useApiData(
+    () => citizenApi.getStories(limit),
+    (res) => res.stories || [],
+    [],
+    [limit, refresh]
+  );
+  return { stories, loading };
+}
+
+// The citizen's own events. Skips the request entirely until the caller
+// knows who the user is — an unscoped /api/events call would pull every
+// event on the platform onto the device.
+export function useMyEvents(contributorId, refresh = 0) {
+  const { data: events, loading } = useApiData(
+    () => (contributorId
+      ? citizenApi.getMyEvents(contributorId)
+      : Promise.resolve({ ok: true, events: [] })),
+    (res) => res.events || [],
+    [],
+    [contributorId, refresh]
+  );
+  return { events, loading };
+}
+
 export function useCitizenOrganizations(refresh = 0) {
   const { data: organizations, loading } = useApiData(
     citizenApi.getOrganizations,

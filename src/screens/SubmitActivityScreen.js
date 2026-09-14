@@ -436,12 +436,22 @@ export default function SubmitActivityScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={24}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          {/* TouchableWithoutFeedback used to wrap this ScrollView. It
+              clones its single child and injects responder props onto it,
+              so the ScrollView itself became the touch responder — an
+              anti-pattern RN documents, and the reason content could blank
+              out mid-scroll. The tap-to-dismiss it provided now lives
+              INSIDE the scroll view, around the content, where it competes
+              with nothing; keyboardDismissMode adds dismiss-on-drag. */}
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            removeClippedSubviews={false}
             showsVerticalScrollIndicator={false}
           >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+              <View style={styles.scrollInner}>
             {/* ── Hero ── */}
             <View style={styles.hero}>
               <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
@@ -669,9 +679,10 @@ export default function SubmitActivityScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+              </View>
+            </TouchableWithoutFeedback>
           </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
     </Background>
   );
 }
@@ -684,6 +695,10 @@ const getStyles = (t) =>
       flex: 1
     },
     keyboardView: { flex: 1 },
+    // flexGrow on both: the content container stretches to the viewport,
+    // and the inner wrapper stretches with it so full-height children keep
+    // the height they had before the wrapper existed.
+    scrollInner: { flexGrow: 1 },
     scrollContent: {
       flexGrow: 1,
       paddingHorizontal: 16,

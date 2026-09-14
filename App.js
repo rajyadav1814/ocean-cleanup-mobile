@@ -43,7 +43,8 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import SubmitActivityScreen from './src/screens/SubmitActivityScreen';
 import QuickReportScreen from './src/screens/QuickReportScreen';
 import MyActivityScreen from './src/screens/MyActivityScreen';
-import AnalysisScreen from './src/screens/AnalysisScreen';
+// import AnalysisScreen from './src/screens/AnalysisScreen';
+import EventDetailScreen from './src/screens/EventDetailScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import ProfileSettingsScreen from './src/screens/ProfileSettingsScreen';
 import { withSwipeNavigation } from './src/components/SwipeableTabScreen';
@@ -51,9 +52,9 @@ import { withSwipeNavigation } from './src/components/SwipeableTabScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const SwipeDashboardScreen = withSwipeNavigation(DashboardScreen);
-const SwipeMyActivityScreen = withSwipeNavigation(MyActivityScreen);
-const SwipeAnalysisScreen = withSwipeNavigation(AnalysisScreen);
+const SwipeDashboardScreen = withSwipeNavigation(DashboardScreen, { tabName: 'Dashboard' });
+const SwipeMyActivityScreen = withSwipeNavigation(MyActivityScreen, { tabName: 'MyActivity' });
+// const SwipeAnalysisScreen = withSwipeNavigation(AnalysisScreen);
 const SwipeQuickReportScreen = withSwipeNavigation(QuickReportScreen, { tabName: 'Submit' });
 const SwipeProfileHomeScreen = withSwipeNavigation(HomeScreen, { tabName: 'Profile' });
 
@@ -130,11 +131,11 @@ function AuthTabs() {
               : 'list-outline';
           }
 
-          if (route.name === 'Analysis') {
-            iconName = focused
-              ? 'analytics'
-              : 'analytics-outline';
-          }
+          // if (route.name === 'Analysis') {
+          //   iconName = focused
+          //     ? 'analytics'
+          //     : 'analytics-outline';
+          // }
 
           if (route.name === 'Profile') {
             iconName = focused
@@ -154,20 +155,25 @@ function AuthTabs() {
     >
       <Tab.Screen
         name="Dashboard"
-        component={SwipeDashboardScreen}
+        component={DashboardStack}
       />
 
       <Tab.Screen
         name="MyActivity"
-        component={SwipeMyActivityScreen}
+        component={MyActivityStack}
         options={{ title: 'My Activity' }}
       />
 
-      <Tab.Screen
+      {/* AI Analysis tab — temporarily disabled. Re-enabling it means
+          uncommenting this block, the AnalysisScreen import and
+          SwipeAnalysisScreen below, the 'Analysis' icon branch above, and
+          the 'Analysis' entry in TAB_ORDER (SwipeableTabScreen.js) — the
+          swipe order must match the tabs that actually exist. */}
+      {/* <Tab.Screen
         name="Analysis"
         component={SwipeAnalysisScreen}
         options={{ title: 'AI Analysis' }}
-      />
+      /> */}
 
       <Tab.Screen
         name="Submit"
@@ -179,6 +185,49 @@ function AuthTabs() {
         component={ProfileStack}
       />
     </Tab.Navigator>
+  );
+}
+
+// Dashboard and My Activity are stacks, not bare screens, so an event can
+// be pushed over them: Needs Attention rows and the "View full event" chip
+// on a story both open the record without leaving the tab.
+function DashboardStack() {
+  const { mode } = useTheme();
+  const t = getCitizenTheme(mode);
+  const backgroundColor = mode === 'dark' ? t.pageBgGradient[1] : t.pageBg;
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor } }}>
+      <Stack.Screen
+        name="DashboardHome"
+        component={SwipeDashboardScreen}
+      />
+
+      <Stack.Screen
+        name="EventDetail"
+        component={EventDetailScreen}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function MyActivityStack() {
+  const { mode } = useTheme();
+  const t = getCitizenTheme(mode);
+  const backgroundColor = mode === 'dark' ? t.pageBgGradient[1] : t.pageBg;
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor } }}>
+      <Stack.Screen
+        name="MyActivityHome"
+        component={SwipeMyActivityScreen}
+      />
+
+      <Stack.Screen
+        name="EventDetail"
+        component={EventDetailScreen}
+      />
+    </Stack.Navigator>
   );
 }
 

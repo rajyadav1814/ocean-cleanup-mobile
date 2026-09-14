@@ -3,8 +3,11 @@ import { Animated, Dimensions, StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 
-// Order the swipe moves through, left <-> right.
-export const TAB_ORDER = ['Dashboard', 'MyActivity', 'Analysis', 'Submit', 'Profile'];
+// Order the swipe moves through, left <-> right. Must list exactly the
+// tabs registered in App.js: a name here with no matching Tab.Screen makes
+// the swipe navigate to a route that doesn't exist.
+// 'Analysis' is commented out alongside the AI Analysis tab in App.js.
+export const TAB_ORDER = ['Dashboard', 'MyActivity', /* 'Analysis', */ 'Submit', 'Profile'];
 
 const SWIPE_DISTANCE_THRESHOLD = 50;
 const SWIPE_VELOCITY_THRESHOLD = 300;

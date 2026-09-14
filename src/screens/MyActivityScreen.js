@@ -18,9 +18,6 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useCitizenActivities } from '../services/citizenHooks';
 import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
-import WaveBar from '../components/citizen/WaveBar';
-import HeroWave from '../components/citizen/HeroWave';
-import WaveMark from '../components/citizen/WaveMark';
 import MyActivitySkeleton from '../components/MyActivitySkeleton';
 
 function normalizeImageUrl(value) {
@@ -437,43 +434,6 @@ export default function MyActivityScreen() {
         renderItem={({ item }) => <ActivityCard item={item} t={t} styles={styles} onImagePress={handleImagePress} />}
         ListHeaderComponent={
           <>
-            {/* ── Hero ── */}
-            <View style={styles.hero}>
-              <WaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
-
-              <View style={styles.heroWaveWrap} pointerEvents="none">
-                <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
-              </View>
-
-              <View style={styles.heroKicker}>
-                <Text style={styles.eyebrow}>YOUR RECORD</Text>
-                <WaveMark color={t.borderGlow} primary={t.primary} />
-              </View>
-
-              <View style={styles.h1Row}>
-                <Ionicons name="list-outline" size={20} color={t.primary} style={styles.h1Icon} />
-                <Text style={styles.h1}>
-                  My <Text style={styles.h1Accent}>activities.</Text>
-                </Text>
-              </View>
-              <Text style={styles.heroSub}>
-                Every cleanup you've logged, in one place — a running record of your environmental impact
-                contributions.
-              </Text>
-
-              <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Submit')} style={styles.ctaWrap}>
-                <LinearGradient
-                  colors={[t.primary, t.secondary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.cta}
-                >
-                  <Text style={styles.ctaText}>Submit Activity</Text>
-                  <Text style={styles.ctaArrow}>→</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-
             {/* ── Filters ── */}
             {list.length > 0 ? (
               <View style={styles.toolbar}>
@@ -603,63 +563,6 @@ const getStyles = (t) =>
       paddingHorizontal: 16,
       paddingTop: 14,
       paddingBottom: 80,
-    },
-    hero: {
-      position: 'relative',
-      overflow: 'hidden',
-      backgroundColor: t.surface,
-      borderWidth: 1,
-      borderColor: t.borderLight,
-      borderRadius: 16,
-      padding: 20,
-      paddingBottom: 66,
-      marginBottom: 14,
-    },
-    heroWaveWrap: {
-      position: 'absolute',
-      right: -20,
-      bottom: -18,
-      opacity: 0.5,
-    },
-    heroKicker: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      marginBottom: 12,
-    },
-    eyebrow: {
-      color: t.primary,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 10,
-      letterSpacing: 2.2,
-      opacity: 0.85,
-    },
-    h1Row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    h1Icon: {
-      marginTop: 2,
-    },
-    h1: {
-      color: t.textMain,
-      fontFamily: CITIZEN_FONTS.sansMedium,
-      fontSize: 22,
-      lineHeight: 29,
-      letterSpacing: -0.3,
-    },
-    h1Accent: {
-      color: t.primary,
-      fontFamily: CITIZEN_FONTS.serifItalic,
-      fontSize: 24,
-    },
-    heroSub: {
-      color: t.textMuted,
-      fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 13,
-      lineHeight: 20,
-      marginTop: 10,
     },
     ctaWrap: {
       marginTop: 18,

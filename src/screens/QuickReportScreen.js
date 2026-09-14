@@ -32,9 +32,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { citizenApi } from '../services/api';
 import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
-import CitizenWaveBar from '../components/citizen/WaveBar';
-import HeroWave from '../components/citizen/HeroWave';
-import WaveMark from '../components/citizen/WaveMark';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 // Mirrors ocean-cleanup-frontend's QuickReport.jsx citizen flow: a fast
@@ -495,50 +492,42 @@ export default function QuickReportScreen() {
   return (
     <Background {...backgroundProps} style={[styles.screen, themeMode !== 'dark' && { backgroundColor: t.pageBg }]}>
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={24}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            {/* ── Header ── */}
-            <View style={styles.headerRow}>
-              {step !== 'choose' ? (
+          {/* TouchableWithoutFeedback used to wrap this ScrollView. It
+              clones its single child and injects responder props onto it,
+              so the ScrollView itself became the touch responder — an
+              anti-pattern RN documents, and the reason content could blank
+              out mid-scroll. The tap-to-dismiss it provided now lives
+              INSIDE the scroll view, around the content, where it competes
+              with nothing; keyboardDismissMode adds dismiss-on-drag. */}
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            removeClippedSubviews={false}
+            showsVerticalScrollIndicator={false}
+          >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+              <View style={styles.scrollInner}>
+            {/* ── Header ── back only, and only where there is something
+                to go back to. The row is not rendered at all on the choose
+                step: it holds nothing there, and an empty row still reserves
+                its height, which left a gap above the first card.
+
+                There is no "use the detailed form instead" escape hatch:
+                quick report IS the contribution path (spec §1/§17 — no
+                category picker before a new contribution). The web Citizen
+                Space retired the same entry point, redirecting
+                /citizen/submit to /citizen/quick-report. */}
+            {step !== 'choose' ? (
+              <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.backPill} activeOpacity={0.8} onPress={goBack}>
                   <Ionicons name="arrow-back" size={16} color={t.textMain} />
                 </TouchableOpacity>
-              ) : (
-                <View />
-              )}
-              <TouchableOpacity
-                style={styles.detailedPill}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('DetailedForm')}
-              >
-                <Text style={styles.detailedPillText}>Use the detailed form instead</Text>
-                <Ionicons name="chevron-forward" size={13} color={t.primary} />
-              </TouchableOpacity>
-            </View>
+              </View>
+            ) : null}
 
             {step === 'choose' ? (
               <>
-                {/* ── Hero ── */}
-                <View style={styles.chooseHero}>
-                  <CitizenWaveBar primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
-
-                  <View style={styles.chooseHeroWaveWrap} pointerEvents="none">
-                    <HeroWave primary={t.primary} secondary={t.secondary} borderGlow={t.borderGlow} />
-                  </View>
-
-                  <View style={styles.chooseHeroKicker}>
-                    <Text style={styles.eyebrow}>QUICK REPORT</Text>
-                    <WaveMark color={t.borderGlow} primary={t.primary} />
-                  </View>
-
-                  <Text style={styles.title}>
-                    What would you like to <Text style={styles.titleAccent}>report?</Text>
-                  </Text>
-                  <Text style={styles.subtitle}>
-                    Help us keep our environment clean and healthy — choose the best way to share what you found.
-                  </Text>
-                </View>
-
                 {/* ── Photo / Video hero ── */}
                 <View style={[styles.hero, { borderColor: withAlpha(t.secondary, 0.35), backgroundColor: withAlpha(t.secondary, 0.08) }]}>
                   <View style={[styles.tileIcon, { backgroundColor: withAlpha(t.secondary, 0.16) }]}>
@@ -862,9 +851,10 @@ export default function QuickReportScreen() {
                 </View>
               </View>
             ) : null}
+              </View>
+            </TouchableWithoutFeedback>
           </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
     </Background>
   );
 }
@@ -887,6 +877,10 @@ const getStyles = (t) =>
   StyleSheet.create({
     screen: { flex: 1 },
     keyboardView: { flex: 1 },
+    // flexGrow on both: the content container stretches to the viewport,
+    // and the inner wrapper stretches with it so full-height children keep
+    // the height they had before the wrapper existed.
+    scrollInner: { flexGrow: 1 },
     scrollContent: {
       flexGrow: 1,
       paddingHorizontal: 16,
@@ -896,7 +890,10 @@ const getStyles = (t) =>
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      // Holds only the back pill, so it starts at the left rather than
+      // splitting a row that no longer has a second child. No minHeight:
+      // the row only renders when the pill does, and the pill sizes it.
+      justifyContent: 'flex-start',
       marginBottom: 12
     },
     backPill: {
@@ -908,74 +905,6 @@ const getStyles = (t) =>
       backgroundColor: t.surfaceHover,
       borderWidth: 1,
       borderColor: t.borderLight
-    },
-    detailedPill: {
-      marginLeft: 'auto',
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      backgroundColor: t.surfaceHover,
-      borderWidth: 1,
-      borderColor: t.borderLight,
-      borderRadius: 999,
-      paddingVertical: 7,
-      paddingHorizontal: 12
-    },
-    detailedPillText: {
-      color: t.primary,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 11.5
-    },
-    // ── Choose-step hero ─────────────────────────────────────────────────
-    chooseHero: {
-      position: 'relative',
-      overflow: 'hidden',
-      backgroundColor: t.surface,
-      borderWidth: 1,
-      borderColor: t.borderLight,
-      borderRadius: 16,
-      padding: 20,
-      paddingBottom: 26,
-      marginBottom: 14
-    },
-    chooseHeroWaveWrap: {
-      position: 'absolute',
-      right: -20,
-      bottom: -18,
-      opacity: 0.5
-    },
-    chooseHeroKicker: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      marginBottom: 12
-    },
-    eyebrow: {
-      color: t.primary,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 10,
-      letterSpacing: 2.2,
-      opacity: 0.85
-    },
-    title: {
-      color: t.textMain,
-      fontFamily: CITIZEN_FONTS.sansMedium,
-      fontSize: 22,
-      lineHeight: 28,
-      letterSpacing: -0.3
-    },
-    titleAccent: {
-      color: t.primary,
-      fontFamily: CITIZEN_FONTS.serifItalic,
-      fontSize: 24
-    },
-    subtitle: {
-      color: t.textMuted,
-      fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 13,
-      lineHeight: 19,
-      marginTop: 10,
-      maxWidth: 300
     },
     messageBox: {
       flexDirection: 'row',
