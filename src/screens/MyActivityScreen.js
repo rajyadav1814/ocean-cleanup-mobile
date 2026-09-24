@@ -129,27 +129,64 @@ const FILTERS = [
   { key: 'rejected', label: 'Rejected' },
 ];
 
-// ─── Pure sub-components ───────────────────────────────────────────────────
 
-const FilterPill = memo(function FilterPill({ t, styles, filter, active, count, onPress }) {
+function ActivityStatusDropdown({ t, selectedTab, counts, onSelect }) {
+  const triggerRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState(null);
+  const selectedFilter = FILTERS.find((filter) => filter.key === selectedTab) || FILTERS[0];
+  const styles = getStyles(t);
+
+  const showMenu = () => {
+    triggerRef.current?.measureInWindow((x, y, width, height) => {
+      setMenuPosition({ left: x, top: y + height + 4, width });
+      setOpen(true);
+    });
+  };
+
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.filterWrap}>
-      {active ? (
-        <LinearGradient colors={[t.primary, t.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.filterPill}>
-          <Text style={styles.filterTextActive}>
-            {filter.label} <Text style={styles.filterCountActive}>({count})</Text>
-          </Text>
-        </LinearGradient>
-      ) : (
-        <View style={styles.filterPill}>
-          <Text style={styles.filterText}>
-            {filter.label} <Text style={styles.filterCount}>({count})</Text>
-          </Text>
+    <>
+      <TouchableOpacity ref={triggerRef} style={styles.filterDropdownTrigger} onPress={showMenu} activeOpacity={0.8}>
+        <Text style={styles.filterDropdownText} numberOfLines={1}>
+          {selectedFilter.label} ({counts[selectedTab]})
+        </Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={t.textMuted} />
+      </TouchableOpacity>
+      <Modal
+        transparent
+        visible={open}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setOpen(false)}
+      >
+        <View style={styles.filterDropdownOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
+          {menuPosition ? (
+            <View style={[styles.filterDropdownMenu, menuPosition]}>
+              {FILTERS.map((filter) => (
+                <TouchableOpacity
+                  key={filter.key}
+                  style={styles.filterDropdownOption}
+                  onPress={() => {
+                    onSelect(filter.key);
+                    setOpen(false);
+                  }}
+                >
+                  <Text style={[styles.filterDropdownOptionText, selectedTab === filter.key && styles.filterDropdownOptionActive]}>
+                    {filter.label} ({counts[filter.key]})
+                  </Text>
+                  {selectedTab === filter.key ? <Ionicons name="checkmark" size={16} color={t.primary} /> : null}
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
         </View>
-      )}
-    </TouchableOpacity>
+      </Modal>
+    </>
   );
-});
+}
+
+// ─── Pure sub-components ───────────────────────────────────────────────────
 
 const ActivityThumbnail = memo(function ActivityThumbnail({ uri, styles }) {
   const loadUrls = getImageLoadUrls(uri);
@@ -425,38 +462,28 @@ export default function MyActivityScreen() {
 
   return (
     <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
+      {list.length > 0 ? (
+        <View style={styles.toolbar}>
+          <ActivityStatusDropdown
+            t={t}
+            selectedTab={selectedTab}
+            counts={counts}
+            onSelect={setSelectedTab}
+          />
+        </View>
+      ) : null}
       <FlatList
         removeClippedSubviews={false}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        style={styles.activityList}
+        contentContainerStyle={[
+          styles.scrollContent,
+          list.length > 0 && styles.scrollContentWithFilter,
+          filteredActivities.length > 5 && styles.scrollContentWithToggle,
+        ]}
         data={visibleActivities}
         keyExtractor={(item, i) => item?.id?.toString() || item?._id || String(item?.activityId) || String(i)}
         renderItem={({ item }) => <ActivityCard item={item} t={t} styles={styles} onImagePress={handleImagePress} />}
-        ListHeaderComponent={
-          <>
-            {/* ── Filters ── */}
-            {list.length > 0 ? (
-              <View style={styles.toolbar}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-                  {FILTERS.map((f) => (
-                    <FilterPill
-                      key={f.key}
-                      t={t}
-                      styles={styles}
-                      filter={f}
-                      active={selectedTab === f.key}
-                      count={counts[f.key]}
-                      onPress={() => setSelectedTab(f.key)}
-                    />
-                  ))}
-                </ScrollView>
-                {/* <Text style={styles.countText}>
-                  Showing {filteredActivities.length} of {list.length}
-                </Text> */}
-              </View>
-            ) : null}
-          </>
-        }
         ListFooterComponent={
           filteredActivities.length > 5 ? (
             <TouchableOpacity
@@ -559,9 +586,18 @@ const getStyles = (t) =>
     screen: {
       flex: 1,
     },
+    activityList: {
+      flex: 1,
+    },
     scrollContent: {
       paddingHorizontal: 16,
       paddingTop: 14,
+      paddingBottom: 80,
+    },
+    scrollContentWithFilter: {
+      paddingTop: 0,
+    },
+    scrollContentWithToggle: {
       paddingBottom: 80,
     },
     ctaWrap: {
@@ -587,46 +623,58 @@ const getStyles = (t) =>
       fontFamily: CITIZEN_FONTS.sansBold,
     },
     toolbar: {
+      paddingHorizontal: 16,
+      paddingTop: 14,
       marginBottom: 14,
     },
-    filters: {
-      backgroundColor: t.surface,
+    filterDropdownTrigger: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: t.surfaceHover,
+      borderRadius: 12,
       borderWidth: 1,
       borderColor: t.borderLight,
-      borderRadius: 14,
-      padding: 5,
-      gap: 4,
+      paddingHorizontal: 14,
+      paddingVertical: 13,
     },
-    filterWrap: {
-      borderRadius: 10,
-      overflow: 'hidden',
+    filterDropdownText: {
+      flex: 1,
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sansMedium,
+      fontSize: 14,
     },
-    filterPill: {
-      paddingHorizontal: 13,
-      paddingVertical: 8,
-      borderRadius: 10,
+    filterDropdownOverlay: {
+      flex: 1,
     },
-    filterText: {
-      color: t.textMuted,
-      fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 12.5,
+    filterDropdownMenu: {
+      position: 'absolute',
+      backgroundColor: t.overlaySurface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      borderRadius: 12,
+      paddingVertical: 4,
+      elevation: 8,
+      shadowColor: '#000',
+      shadowOpacity: 0.18,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
     },
-    filterCount: {
-      color: t.textMuted,
+    filterDropdownOption: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+    },
+    filterDropdownOptionText: {
+      color: t.textMain,
       fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 11,
-      opacity: 0.85,
+      fontSize: 14,
     },
-    filterTextActive: {
-      color: '#ffffff',
+    filterDropdownOptionActive: {
+      color: t.primary,
       fontFamily: CITIZEN_FONTS.sansBold,
-      fontSize: 12.5,
-    },
-    filterCountActive: {
-      color: '#ffffff',
-      fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 11,
-      opacity: 0.85,
     },
     countText: {
       color: t.textMuted,

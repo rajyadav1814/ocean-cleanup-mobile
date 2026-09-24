@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,6 +26,13 @@ export default function ProfileSettingsScreen({ navigation }) {
   });
 
   const [saving, setSaving] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  useEffect(() => {
+    if (!toastMessage) return undefined;
+    const timeout = setTimeout(() => setToastMessage(''), 2600);
+    return () => clearTimeout(timeout);
+  }, [toastMessage]);
 
   const handleChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -73,7 +80,7 @@ export default function ProfileSettingsScreen({ navigation }) {
 
       if (res.ok) {
         await updateUser(res.user);
-        Alert.alert('Success', 'Profile updated successfully', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+        setToastMessage('Profile updated successfully');
       } else {
         Alert.alert('Error', res.message || 'Failed to update profile');
       }
@@ -90,7 +97,7 @@ export default function ProfileSettingsScreen({ navigation }) {
 
   return (
     <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: 10 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.75}>
           <Ionicons name="arrow-back" size={22} color={t.textMain} />
         </TouchableOpacity>
@@ -100,6 +107,21 @@ export default function ProfileSettingsScreen({ navigation }) {
         </View>
         <View style={{ width: 34 }} />
       </View>
+
+      <Modal
+        transparent
+        visible={!!toastMessage}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setToastMessage('')}
+      >
+        <View style={styles.successToastOverlay} accessibilityRole="alert">
+          <View style={styles.successToast}>
+            <Ionicons name="checkmark-circle" size={34} color={t.success} />
+            <Text style={styles.successToastText}>{toastMessage}</Text>
+          </View>
+        </View>
+      </Modal>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}>
         <View style={styles.introCard}>
@@ -201,6 +223,35 @@ const getStyles = (t) =>
       justifyContent: 'space-between',
       paddingHorizontal: 16,
       paddingBottom: 10
+    },
+    successToastOverlay: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 32,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+    },
+    successToast: {
+      width: '100%',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 24,
+      paddingVertical: 24,
+      borderRadius: 18,
+      backgroundColor: t.overlaySurface,
+      borderWidth: 1,
+      borderColor: t.borderLight,
+      elevation: 12,
+      shadowColor: '#000',
+      shadowOpacity: 0.22,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+    },
+    successToastText: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sansMedium,
+      fontSize: 15,
+      textAlign: 'center',
     },
     backButton: {
       width: 34,

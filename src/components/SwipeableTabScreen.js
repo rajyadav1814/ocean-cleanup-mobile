@@ -20,7 +20,7 @@ const ENTER_DURATION = 220;
 // to slide in from; read once on focus and cleared immediately after.
 let pendingSwipeDirection = null;
 
-export default function SwipeableTabScreen({ children, order = TAB_ORDER, tabName }) {
+export default function SwipeableTabScreen({ children, order = TAB_ORDER, tabName, swipeLeftTarget, swipeRightTarget }) {
   const navigation = useNavigation();
   const route = useRoute();
   const translateX = useRef(new Animated.Value(0)).current;
@@ -96,15 +96,21 @@ export default function SwipeableTabScreen({ children, order = TAB_ORDER, tabNam
       let targetTab = null;
       let direction = null;
 
-      if (swipedLeft && currentIndex !== -1) {
+      if (swipedLeft && swipeLeftTarget) {
+        targetTab = swipeLeftTarget;
+        direction = 'left';
+      } else if (swipedLeft && currentIndex !== -1) {
         targetTab = order[currentIndex + 1];
         direction = 'left';
+      } else if (swipedRight && swipeRightTarget) {
+        targetTab = swipeRightTarget;
+        direction = 'right';
       } else if (swipedRight && currentIndex !== -1) {
         targetTab = order[currentIndex - 1];
         direction = 'right';
       }
 
-      if (targetTab) {
+      if (targetTab && targetTab !== route.name) {
         exitTo(targetTab, direction);
       } else {
         settle();
@@ -120,10 +126,10 @@ export default function SwipeableTabScreen({ children, order = TAB_ORDER, tabNam
   );
 }
 
-export function withSwipeNavigation(Component, { order = TAB_ORDER, tabName } = {}) {
+export function withSwipeNavigation(Component, { order = TAB_ORDER, tabName, swipeLeftTarget, swipeRightTarget } = {}) {
   return function SwipeWrappedScreen(props) {
     return (
-      <SwipeableTabScreen order={order} tabName={tabName}>
+      <SwipeableTabScreen order={order} tabName={tabName} swipeLeftTarget={swipeLeftTarget} swipeRightTarget={swipeRightTarget}>
         <Component {...props} />
       </SwipeableTabScreen>
     );

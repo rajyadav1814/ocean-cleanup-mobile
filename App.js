@@ -55,8 +55,27 @@ const Tab = createBottomTabNavigator();
 const SwipeDashboardScreen = withSwipeNavigation(DashboardScreen, { tabName: 'Dashboard' });
 const SwipeMyActivityScreen = withSwipeNavigation(MyActivityScreen, { tabName: 'MyActivity' });
 // const SwipeAnalysisScreen = withSwipeNavigation(AnalysisScreen);
-const SwipeQuickReportScreen = withSwipeNavigation(QuickReportScreen, { tabName: 'Submit' });
+const SwipeQuickReportScreen = withSwipeNavigation(QuickReportScreen, {
+  tabName: 'Submit',
+  swipeLeftTarget: 'QuickReport',
+  swipeRightTarget: 'QuickReport',
+});
+const SwipeTellBlueMindScreen = withSwipeNavigation(QuickReportScreen, {
+  tabName: 'Submit',
+  swipeLeftTarget: 'PhotoVideoUpload',
+  swipeRightTarget: 'PhotoVideoUpload',
+});
+const SwipePhotoVideoScreen = withSwipeNavigation(QuickReportScreen, {
+  tabName: 'Submit',
+  swipeLeftTarget: 'TellBlueMind',
+  swipeRightTarget: 'TellBlueMind',
+});
 const SwipeProfileHomeScreen = withSwipeNavigation(HomeScreen, { tabName: 'Profile' });
+const SwipeDetailedFormScreen = withSwipeNavigation(SubmitActivityScreen, {
+  tabName: 'Submit',
+  swipeLeftTarget: 'QuickReport',
+  swipeRightTarget: 'QuickReport',
+});
 
 function AuthTabs() {
   const { mode } = useTheme();
@@ -65,7 +84,7 @@ function AuthTabs() {
   const tabBarBackground = mode === 'dark' ? t.pageBgGradient[1] : t.surface;
 
   const tabBarBottom = 0;
-  const tabBarContentHeight = 55;
+  const tabBarContentHeight = 64;
   const tabBarPaddingBottom = insets.bottom > 0 ? insets.bottom + 8 : 8;
 
   return (
@@ -107,6 +126,7 @@ function AuthTabs() {
         tabBarLabelStyle: {
           fontFamily: CITIZEN_FONTS.sansMedium,
           fontSize: 10.5,
+          marginTop: 4,
           marginBottom: 2,
         },
 
@@ -178,11 +198,13 @@ function AuthTabs() {
       <Tab.Screen
         name="Submit"
         component={SubmitStack}
+        options={{ unmountOnBlur: true }}
       />
 
       <Tab.Screen
         name="Profile"
         component={ProfileStack}
+        options={{ unmountOnBlur: true }}
       />
     </Tab.Navigator>
   );
@@ -244,8 +266,18 @@ function SubmitStack() {
       />
 
       <Stack.Screen
+        name="TellBlueMind"
+        component={SwipeTellBlueMindScreen}
+      />
+
+      <Stack.Screen
+        name="PhotoVideoUpload"
+        component={SwipePhotoVideoScreen}
+      />
+
+      <Stack.Screen
         name="DetailedForm"
-        component={SubmitActivityScreen}
+        component={SwipeDetailedFormScreen}
       />
     </Stack.Navigator>
   );
@@ -355,15 +387,32 @@ export default function App() {
       <SafeAreaProvider>
         <ThemeProvider>
           <AuthProvider>
-            <SafeAreaView
-              style={{ flex: 1 }}
-              edges={['top']}
-            >
-            <RootNavigator />
-            </SafeAreaView>
+            <ThemedAppFrame />
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+function ThemedAppFrame() {
+  const { mode } = useTheme();
+  const t = getCitizenTheme(mode);
+  const backgroundColor = mode === 'dark' ? t.pageBgGradient[1] : t.pageBg;
+
+  return (
+    <>
+      <StatusBar
+        style={mode === 'dark' ? 'light' : 'dark'}
+        translucent
+        backgroundColor="transparent"
+      />
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor }}
+        edges={['top']}
+      >
+        <RootNavigator />
+      </SafeAreaView>
+    </>
   );
 }

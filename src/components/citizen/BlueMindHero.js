@@ -1,5 +1,5 @@
 import React, { memo, useMemo } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { CITIZEN_FONTS } from '../../styles/citizenTheme';
@@ -14,22 +14,12 @@ import { CITIZEN_FONTS } from '../../styles/citizenTheme';
 // behind the whole card at 22% opacity, because there is no side-by-side
 // column left to protect. React Native has no mask-image, so this is both
 // the faithful and the practical choice.
-const HERO_LIGHT = require('../../../assets/hero-light.jpg');
-const HERO_DARK = require('../../../assets/hero-dark.jpg');
 
 const BlueMindHero = memo(function BlueMindHero({ t, mode, firstName, heroUpdate, jobTitle, onContribute }) {
   const styles = useMemo(() => getStyles(t), [t]);
 
   return (
     <View style={styles.hero}>
-      {/* Full-bleed artwork, dimmed — the greeting sits on top of it. */}
-      <Image
-        source={mode === 'dark' ? HERO_DARK : HERO_LIGHT}
-        style={styles.scene}
-        resizeMode="cover"
-        accessible={false}
-      />
-
       <View style={styles.top}>
         <Text style={styles.brandName} numberOfLines={1}>CITIZEN COMMUNITY</Text>
         {jobTitle ? (
@@ -90,11 +80,6 @@ const getStyles = (t) =>
       paddingTop: 21,
       paddingBottom: 26,
       marginBottom: 14,
-    },
-    scene: {
-      ...StyleSheet.absoluteFillObject,
-      // The web's own <=860px rule for this photograph.
-      opacity: 0.22,
     },
     top: {
       flexDirection: 'row',

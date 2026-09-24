@@ -27,7 +27,7 @@ import {
   useAudioRecorderState
 } from 'expo-audio';
 import { File } from 'expo-file-system';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { citizenApi } from '../services/api';
@@ -142,6 +142,7 @@ const waveStyles = StyleSheet.create({
 
 export default function QuickReportScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
   const { mode: themeMode } = useTheme();
   const { user } = useAuth();
   const isFocused = useIsFocused();
@@ -149,8 +150,9 @@ export default function QuickReportScreen() {
   const t = useMemo(() => getCitizenTheme(themeMode), [themeMode]);
   const styles = useMemo(() => getStyles(t), [t]);
 
-  // 'choose' | 'textChoose' | 'voiceRecording' | 'text' | 'videoDescribe' | 'loading' | 'confirm'
-  const [step, setStep] = useState('choose');
+  // 'choose' | 'media' | 'textChoose' | 'voiceRecording' | 'text' | 'videoDescribe' | 'loading' | 'confirm'
+  const initialStep = route.name === 'TellBlueMind' ? 'textChoose' : route.name === 'PhotoVideoUpload' ? 'media' : 'choose';
+  const [step, setStep] = useState(initialStep);
   const [message, setMessage] = useState('');
   const [loadingLabel, setLoadingLabel] = useState('Blue Mind is looking at this…');
 
@@ -190,7 +192,7 @@ export default function QuickReportScreen() {
   // ─── Reset / navigation between steps ──────────────────────────────────────
 
   const resetAll = useCallback(() => {
-    setStep('choose');
+    setStep(initialStep);
     setMessage('');
     setPhotoAsset(null);
     setCaptureSource(null);
@@ -207,22 +209,21 @@ export default function QuickReportScreen() {
     setLocation('');
     setLatitude('');
     setLongitude('');
-  }, []);
+  }, [initialStep]);
 
   const goBack = useCallback(() => {
     setMessage('');
-    if (step === 'textChoose') setStep('choose');
+    if (step === 'textChoose' || step === 'media') navigation.goBack();
     else if (step === 'voiceRecording') {
       if (recorderState.isRecording) recorder.stop().catch(() => {});
       setStep('textChoose');
     } else if (step === 'text') setStep('textChoose');
     else if (step === 'videoDescribe') {
       setVideoAsset(null);
-      setStep('choose');
+      setStep('media');
     } else if (step === 'confirm') resetAll();
-    else setStep('choose');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, recorderState.isRecording]);
+    else setStep(initialStep);
+  }, [step, recorderState.isRecording, navigation, resetAll, initialStep]);
 
   // ─── Location ───────────────────────────────────────────────────────────
 
@@ -526,7 +527,7 @@ export default function QuickReportScreen() {
               </View>
             ) : null}
 
-            {step === 'choose' ? (
+            {step === 'choose' || step === 'media' ? (
               <>
                 {/* ── Photo / Video hero ── */}
                 <View style={[styles.hero, { borderColor: withAlpha(t.secondary, 0.35), backgroundColor: withAlpha(t.secondary, 0.08) }]}>
@@ -536,20 +537,31 @@ export default function QuickReportScreen() {
                   <Text style={styles.heroTitle}>Photo / Video</Text>
                   <Text style={styles.heroSub}>Take or upload a clear photo or video of what you found.</Text>
 
-                  <View style={styles.heroActions}>
-                    <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: t.secondary }]} activeOpacity={0.85} onPress={handleTakePhoto}>
-                      <Ionicons name="camera" size={15} color="#fff" />
-                      <Text style={styles.btnPrimaryText}>Take a photo</Text>
+                  {step === 'choose' ? (
+                    <TouchableOpacity
+                      style={[styles.btnPrimary, { backgroundColor: t.secondary, marginTop: 14 }]}
+                      activeOpacity={0.85}
+                      onPress={() => navigation.navigate('PhotoVideoUpload')}
+                    >
+                      <Ionicons name="arrow-forward" size={15} color="#fff" />
+                      <Text style={styles.btnPrimaryText}>Continue with photo or video</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.btnOutline, { borderColor: withAlpha(t.secondary, 0.4) }]} activeOpacity={0.85} onPress={handlePickImage}>
-                      <Ionicons name="images-outline" size={15} color={t.secondary} />
-                      <Text style={[styles.btnOutlineText, { color: t.secondary }]}>Choose from gallery</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.btnOutline, { borderColor: withAlpha(t.secondary, 0.4) }]} activeOpacity={0.85} onPress={handlePickVideo}>
-                      <Ionicons name="videocam-outline" size={15} color={t.secondary} />
-                      <Text style={[styles.btnOutlineText, { color: t.secondary }]}>Add a video</Text>
-                    </TouchableOpacity>
-                  </View>
+                  ) : (
+                    <View style={styles.heroActions}>
+                      <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: t.secondary }]} activeOpacity={0.85} onPress={handleTakePhoto}>
+                        <Ionicons name="camera" size={15} color="#fff" />
+                        <Text style={styles.btnPrimaryText}>Take a photo</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.btnOutline, { borderColor: withAlpha(t.secondary, 0.4) }]} activeOpacity={0.85} onPress={handlePickImage}>
+                        <Ionicons name="images-outline" size={15} color={t.secondary} />
+                        <Text style={[styles.btnOutlineText, { color: t.secondary }]}>Choose from gallery</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.btnOutline, { borderColor: withAlpha(t.secondary, 0.4) }]} activeOpacity={0.85} onPress={handlePickVideo}>
+                        <Ionicons name="videocam-outline" size={15} color={t.secondary} />
+                        <Text style={[styles.btnOutlineText, { color: t.secondary }]}>Add a video</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
                   <View style={[styles.heroArt, { borderColor: withAlpha(t.secondary, 0.3) }]}>
                     <Ionicons name="image-outline" size={26} color={withAlpha(t.secondary, 0.7)} />
@@ -557,11 +569,13 @@ export default function QuickReportScreen() {
                   </View>
                 </View>
 
+                {step === 'choose' ? (
+                  <>
                 {/* ── Tell Blue Mind ── */}
                 <TouchableOpacity
                   style={[styles.tile, { borderColor: withAlpha(VIOLET_ACCENT, 0.35), backgroundColor: withAlpha(VIOLET_ACCENT, 0.08) }]}
                   activeOpacity={0.85}
-                  onPress={() => setStep('textChoose')}
+                  onPress={() => navigation.navigate('TellBlueMind')}
                 >
                   <View style={[styles.tileIcon, { backgroundColor: withAlpha(VIOLET_ACCENT, 0.16) }]}>
                     <Ionicons name="mic-outline" size={20} color={VIOLET_ACCENT} />
@@ -599,6 +613,8 @@ export default function QuickReportScreen() {
                     </View>
                   </View>
                 </View>
+                  </>
+                ) : null}
 
                 {message ? (
                   <View style={styles.messageBox}>
