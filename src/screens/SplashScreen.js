@@ -85,6 +85,7 @@ export default function SplashScreen() {
           <BluemindMark size={44} color={AUTH_COLORS.onDark} />
         </Animated.View>
         <Animated.Text
+          numberOfLines={1}
           style={[
             styles.brandText,
             {
@@ -121,6 +122,8 @@ const styles = StyleSheet.create({
   brandText: {
     fontSize: 30,
     letterSpacing: 4,
+    paddingRight: 8,
+    flexShrink: 0,
     color: AUTH_COLORS.onDark,
     fontFamily: AUTH_FONTS.sansBold
   },
