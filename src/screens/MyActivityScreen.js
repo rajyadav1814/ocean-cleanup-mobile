@@ -131,58 +131,29 @@ const FILTERS = [
 
 
 function ActivityStatusDropdown({ t, selectedTab, counts, onSelect }) {
-  const triggerRef = useRef(null);
-  const [open, setOpen] = useState(false);
-  const [menuPosition, setMenuPosition] = useState(null);
-  const selectedFilter = FILTERS.find((filter) => filter.key === selectedTab) || FILTERS[0];
   const styles = getStyles(t);
 
-  const showMenu = () => {
-    triggerRef.current?.measureInWindow((x, y, width, height) => {
-      setMenuPosition({ left: x, top: y + height + 4, width });
-      setOpen(true);
-    });
-  };
-
   return (
-    <>
-      <TouchableOpacity ref={triggerRef} style={styles.filterDropdownTrigger} onPress={showMenu} activeOpacity={0.8}>
-        <Text style={styles.filterDropdownText} numberOfLines={1}>
-          {selectedFilter.label} ({counts[selectedTab]})
-        </Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={t.textMuted} />
-      </TouchableOpacity>
-      <Modal
-        transparent
-        visible={open}
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setOpen(false)}
-      >
-        <View style={styles.filterDropdownOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
-          {menuPosition ? (
-            <View style={[styles.filterDropdownMenu, menuPosition]}>
-              {FILTERS.map((filter) => (
-                <TouchableOpacity
-                  key={filter.key}
-                  style={styles.filterDropdownOption}
-                  onPress={() => {
-                    onSelect(filter.key);
-                    setOpen(false);
-                  }}
-                >
-                  <Text style={[styles.filterDropdownOptionText, selectedTab === filter.key && styles.filterDropdownOptionActive]}>
-                    {filter.label} ({counts[filter.key]})
-                  </Text>
-                  {selectedTab === filter.key ? <Ionicons name="checkmark" size={16} color={t.primary} /> : null}
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : null}
-        </View>
-      </Modal>
-    </>
+    <View style={styles.filterSegments} accessibilityRole="tablist">
+      {FILTERS.map((filter) => {
+        const selected = selectedTab === filter.key;
+        return (
+          <TouchableOpacity
+            key={filter.key}
+            style={[styles.filterSegment, selected && styles.filterSegmentSelected]}
+            onPress={() => onSelect(filter.key)}
+            activeOpacity={0.8}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            accessibilityLabel={`${filter.label}, ${counts[filter.key]} activities`}
+          >
+            <Text style={[styles.filterSegmentText, selected && styles.filterSegmentTextSelected]} numberOfLines={1}>
+              {filter.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
   );
 }
 
@@ -623,58 +594,40 @@ const getStyles = (t) =>
       fontFamily: CITIZEN_FONTS.sansBold,
     },
     toolbar: {
-      paddingHorizontal: 16,
-      paddingTop: 14,
+      paddingTop: 16,
+      marginHorizontal: 16,
       marginBottom: 14,
     },
-    filterDropdownTrigger: {
+    filterSegments: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: t.surfaceHover,
-      borderRadius: 12,
+      backgroundColor: t.surface,
+      borderRadius: 24,
       borderWidth: 1,
       borderColor: t.borderLight,
-      paddingHorizontal: 14,
-      paddingVertical: 13,
+      padding: 6,
     },
-    filterDropdownText: {
+    filterSegment: {
       flex: 1,
+      minWidth: 0,
+      minHeight: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 999,
+      paddingHorizontal: 4,
+      paddingVertical: 6,
+    },
+    filterSegmentSelected: {
+      backgroundColor: `${t.primary}18`,
+    },
+    filterSegmentText: {
       color: t.textMain,
       fontFamily: CITIZEN_FONTS.sansMedium,
-      fontSize: 14,
+      fontSize: 15,
     },
-    filterDropdownOverlay: {
-      flex: 1,
-    },
-    filterDropdownMenu: {
-      position: 'absolute',
-      backgroundColor: t.overlaySurface,
-      borderWidth: 1,
-      borderColor: t.borderLight,
-      borderRadius: 12,
-      paddingVertical: 4,
-      elevation: 8,
-      shadowColor: '#000',
-      shadowOpacity: 0.18,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 6 },
-    },
-    filterDropdownOption: {
-      minHeight: 44,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 14,
-    },
-    filterDropdownOptionText: {
-      color: t.textMain,
-      fontFamily: CITIZEN_FONTS.sans,
-      fontSize: 14,
-    },
-    filterDropdownOptionActive: {
+    filterSegmentTextSelected: {
       color: t.primary,
-      fontFamily: CITIZEN_FONTS.sansBold,
+      fontFamily: CITIZEN_FONTS.sansMedium,
     },
     countText: {
       color: t.textMuted,

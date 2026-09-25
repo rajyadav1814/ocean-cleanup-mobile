@@ -57,24 +57,24 @@ const SwipeMyActivityScreen = withSwipeNavigation(MyActivityScreen, { tabName: '
 // const SwipeAnalysisScreen = withSwipeNavigation(AnalysisScreen);
 const SwipeQuickReportScreen = withSwipeNavigation(QuickReportScreen, {
   tabName: 'Submit',
-  swipeLeftTarget: 'QuickReport',
-  swipeRightTarget: 'QuickReport',
+  swipeLeftTarget: 'Profile',
+  swipeRightTarget: 'MyActivity',
 });
 const SwipeTellBlueMindScreen = withSwipeNavigation(QuickReportScreen, {
   tabName: 'Submit',
-  swipeLeftTarget: 'PhotoVideoUpload',
-  swipeRightTarget: 'PhotoVideoUpload',
+  swipeLeftTarget: 'Profile',
+  swipeRightTarget: 'MyActivity',
 });
 const SwipePhotoVideoScreen = withSwipeNavigation(QuickReportScreen, {
   tabName: 'Submit',
-  swipeLeftTarget: 'TellBlueMind',
-  swipeRightTarget: 'TellBlueMind',
+  swipeLeftTarget: 'Profile',
+  swipeRightTarget: 'MyActivity',
 });
 const SwipeProfileHomeScreen = withSwipeNavigation(HomeScreen, { tabName: 'Profile' });
 const SwipeDetailedFormScreen = withSwipeNavigation(SubmitActivityScreen, {
   tabName: 'Submit',
-  swipeLeftTarget: 'QuickReport',
-  swipeRightTarget: 'QuickReport',
+  swipeLeftTarget: 'Profile',
+  swipeRightTarget: 'MyActivity',
 });
 
 function AuthTabs() {
