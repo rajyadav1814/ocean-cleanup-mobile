@@ -3,6 +3,8 @@ import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_BAR_HEIGHT } from '../../App';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -108,6 +110,8 @@ const FeedRow = memo(function FeedRow({ item, t, styles }) {
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
+  const tabBarClearance = TAB_BAR_HEIGHT + (insets.bottom > 0 ? insets.bottom + 8 : 8) + 24;
   const { user } = useAuth();
   const [feedExpanded, setFeedExpanded] = useState(false);
   // Opens the read-only event record. Lives in the Dashboard stack, so the
@@ -206,7 +210,7 @@ export default function DashboardScreen() {
     <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarClearance }]}
       >
         {/* ── Hero ── the same Blue Mind hero the web Citizen Space uses.
             One hero for new and returning citizens alike, exactly as on
