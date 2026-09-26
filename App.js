@@ -52,6 +52,12 @@ import { withSwipeNavigation } from './src/components/SwipeableTabScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Shared with every screen's ScrollView/FlatList so their bottom padding
+// always matches the real (absolute-positioned) tab bar height, instead of
+// each screen guessing a fixed number. Keep this equal to
+// tabBarContentHeight below.
+export const TAB_BAR_HEIGHT = 64;
+
 const SwipeDashboardScreen = withSwipeNavigation(DashboardScreen, { tabName: 'Dashboard' });
 const SwipeMyActivityScreen = withSwipeNavigation(MyActivityScreen, { tabName: 'MyActivity' });
 // const SwipeAnalysisScreen = withSwipeNavigation(AnalysisScreen);
@@ -84,7 +90,7 @@ function AuthTabs() {
   const tabBarBackground = mode === 'dark' ? t.pageBgGradient[1] : t.surface;
 
   const tabBarBottom = 0;
-  const tabBarContentHeight = 64;
+  const tabBarContentHeight = TAB_BAR_HEIGHT;
   const tabBarPaddingBottom = insets.bottom > 0 ? insets.bottom + 8 : 8;
 
   return (

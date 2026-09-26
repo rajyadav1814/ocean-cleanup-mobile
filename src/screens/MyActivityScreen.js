@@ -15,6 +15,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_BAR_HEIGHT } from '../../App';
 import { useTheme } from '../context/ThemeContext';
 import { useCitizenActivities } from '../services/citizenHooks';
 import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
@@ -147,9 +149,14 @@ function ActivityStatusDropdown({ t, selectedTab, counts, onSelect }) {
             accessibilityState={{ selected }}
             accessibilityLabel={`${filter.label}, ${counts[filter.key]} activities`}
           >
-            <Text style={[styles.filterSegmentText, selected && styles.filterSegmentTextSelected]} numberOfLines={1}>
-              {filter.label}
-            </Text>
+            <View style={styles.filterSegmentContent}>
+              <Text style={[styles.filterSegmentText, selected && styles.filterSegmentTextSelected]} numberOfLines={1}>
+                {filter.label}
+              </Text>
+              <View style={[styles.filterCountBadge, selected && styles.filterCountBadgeSelected]}>
+                <Text style={[styles.filterCount, selected && styles.filterCountSelected]}>{counts[filter.key]}</Text>
+              </View>
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -373,9 +380,14 @@ const ActivityCard = memo(function ActivityCard({ item, t, styles, onImagePress 
 export default function MyActivityScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
   const { mode } = useTheme();
   const t = useMemo(() => getCitizenTheme(mode), [mode]);
   const styles = useMemo(() => getStyles(t), [t]);
+
+  // Real tab bar height (matches App.js) + safe-area inset, so the last
+  // card / Show more-less row never sits behind the absolute tab bar.
+  const tabBarClearance = TAB_BAR_HEIGHT + (insets.bottom > 0 ? insets.bottom + 8 : 8) + 24;
 
   const { activities, loading } = useCitizenActivities(isFocused ? 1 : 0);
   const [selectedTab, setSelectedTab] = useState('all');
@@ -451,6 +463,7 @@ export default function MyActivityScreen() {
           styles.scrollContent,
           list.length > 0 && styles.scrollContentWithFilter,
           filteredActivities.length > 5 && styles.scrollContentWithToggle,
+          { paddingBottom: tabBarClearance },
         ]}
         data={visibleActivities}
         keyExtractor={(item, i) => item?.id?.toString() || item?._id || String(item?.activityId) || String(i)}
@@ -620,14 +633,42 @@ const getStyles = (t) =>
     filterSegmentSelected: {
       backgroundColor: `${t.primary}18`,
     },
+    filterSegmentContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      maxWidth: '100%',
+    },
     filterSegmentText: {
       color: t.textMain,
       fontFamily: CITIZEN_FONTS.sansMedium,
-      fontSize: 15,
+      fontSize: 11.5,
     },
     filterSegmentTextSelected: {
       color: t.primary,
       fontFamily: CITIZEN_FONTS.sansMedium,
+    },
+    filterCount: {
+      color: t.textMain,
+      fontFamily: CITIZEN_FONTS.sansBold,
+      fontSize: 10.5,
+      textAlign: 'center',
+    },
+    filterCountSelected: {
+      color: t.surface,
+    },
+    filterCountBadge: {
+      minWidth: 18,
+      height: 18,
+      paddingHorizontal: 4,
+      borderRadius: 9,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.surfaceHover,
+    },
+    filterCountBadgeSelected: {
+      backgroundColor: t.primary,
     },
     countText: {
       color: t.textMuted,

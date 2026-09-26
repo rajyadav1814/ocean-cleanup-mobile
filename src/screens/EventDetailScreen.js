@@ -5,6 +5,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_BAR_HEIGHT } from '../../App';
 import { useTheme } from '../context/ThemeContext';
 import { getCitizenTheme, CITIZEN_FONTS } from '../styles/citizenTheme';
 import { citizenApi } from '../services/api';
@@ -47,6 +49,8 @@ const Section = ({ styles, t, icon, title, children }) => (
 export default function EventDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const insets = useSafeAreaInsets();
+  const tabBarClearance = TAB_BAR_HEIGHT + (insets.bottom > 0 ? insets.bottom + 8 : 8) + 24;
   const { mode } = useTheme();
   const t = useMemo(() => getCitizenTheme(mode), [mode]);
   const styles = useMemo(() => getStyles(t), [t]);
@@ -296,7 +300,7 @@ export default function EventDetailScreen() {
   return (
     <Background {...backgroundProps} style={[styles.screen, mode !== 'dark' && { backgroundColor: t.pageBg }]}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarClearance }]}
         removeClippedSubviews={false}
         showsVerticalScrollIndicator={false}
       >

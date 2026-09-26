@@ -28,6 +28,8 @@ import {
 } from 'expo-audio';
 import { File } from 'expo-file-system';
 import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_BAR_HEIGHT } from '../../App';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { citizenApi } from '../services/api';
@@ -146,6 +148,8 @@ export default function QuickReportScreen() {
   const { mode: themeMode } = useTheme();
   const { user } = useAuth();
   const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
+  const tabBarClearance = TAB_BAR_HEIGHT + (insets.bottom > 0 ? insets.bottom + 8 : 8) + 24;
 
   const t = useMemo(() => getCitizenTheme(themeMode), [themeMode]);
   const styles = useMemo(() => getStyles(t), [t]);
@@ -493,6 +497,13 @@ export default function QuickReportScreen() {
   return (
     <Background {...backgroundProps} style={[styles.screen, themeMode !== 'dark' && { backgroundColor: t.pageBg }]}>
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={24}>
+          {step === 'confirm' ? (
+            <View style={styles.fixedHeader}>
+              <TouchableOpacity style={styles.backPill} activeOpacity={0.8} onPress={goBack}>
+                <Ionicons name="arrow-back" size={16} color={t.textMain} />
+              </TouchableOpacity>
+            </View>
+          ) : null}
           {/* TouchableWithoutFeedback used to wrap this ScrollView. It
               clones its single child and injects responder props onto it,
               so the ScrollView itself became the touch responder — an
@@ -501,7 +512,7 @@ export default function QuickReportScreen() {
               INSIDE the scroll view, around the content, where it competes
               with nothing; keyboardDismissMode adds dismiss-on-drag. */}
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarClearance }]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             removeClippedSubviews={false}
@@ -519,7 +530,7 @@ export default function QuickReportScreen() {
                 category picker before a new contribution). The web Citizen
                 Space retired the same entry point, redirecting
                 /citizen/submit to /citizen/quick-report. */}
-            {step !== 'choose' ? (
+            {step !== 'choose' && step !== 'confirm' ? (
               <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.backPill} activeOpacity={0.8} onPress={goBack}>
                   <Ionicons name="arrow-back" size={16} color={t.textMain} />
@@ -827,8 +838,9 @@ export default function QuickReportScreen() {
                     placeholder="0"
                     placeholderTextColor={t.textMuted}
                     value={quantity}
-                    onChangeText={setQuantity}
+                    onChangeText={(value) => setQuantity(value.slice(0, 5))}
                     keyboardType="numeric"
+                    maxLength={5}
                   />
                   {aiEstimatedQuantity != null ? (
                     <Text style={styles.helperText}>
@@ -893,6 +905,13 @@ const getStyles = (t) =>
   StyleSheet.create({
     screen: { flex: 1 },
     keyboardView: { flex: 1 },
+    fixedHeader: {
+      paddingHorizontal: 16,
+      paddingTop: 14,
+      paddingBottom: 12,
+      alignItems: 'flex-start',
+      zIndex: 1
+    },
     // flexGrow on both: the content container stretches to the viewport,
     // and the inner wrapper stretches with it so full-height children keep
     // the height they had before the wrapper existed.
@@ -1248,13 +1267,15 @@ const getStyles = (t) =>
       marginTop: 4
     },
     startOverBtn: {
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 13,
-      paddingHorizontal: 18,
+      paddingHorizontal: 0,
       borderRadius: 999,
       borderWidth: 1,
-      borderColor: t.borderLight
+      borderColor: t.borderLight,
+      marginTop: 8
     },
     startOverBtnText: {
       color: t.textMuted,
