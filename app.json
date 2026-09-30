@@ -27,7 +27,7 @@
       "package": "com.bluemind.mobile",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png"
+        "foregroundImage": "./assets/logo-v2.png"
       }
     },
     "owner": "keyur-cloudpeaks-team",
